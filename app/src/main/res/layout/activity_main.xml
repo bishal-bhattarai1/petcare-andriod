@@ -5,16 +5,19 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
-    tools:context=".MainActivity">
+    android:padding="28dp"
+    android:background="?attr/colorSurface">
 
-    <!-- Branding Placeholder -->
-    <FrameLayout
-        android:id="@+id/logoContainer"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_marginTop="80dp"
-        android:background="?attr/colorPrimaryContainer"
+    <!-- Premium Branding Placeholder Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/logoCard"
+        style="@style/Widget.Material3.CardView.Filled"
+        android:layout_width="130dp"
+        android:layout_height="130dp"
+        android:layout_marginTop="90dp"
+        app:cardCornerRadius="32dp"
+        app:cardBackgroundColor="?attr/colorPrimaryContainer"
+        app:strokeWidth="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -24,21 +27,22 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="🐾"
-            android:textSize="48sp" />
-    </FrameLayout>
+            android:textSize="54sp" />
+    </com.google.android.material.card.MaterialCardView>
 
     <TextView
         android:id="@+id/textViewTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="28dp"
         android:text="PetCare"
         android:textColor="?attr/colorOnSurface"
-        android:textSize="32sp"
+        android:textSize="36sp"
         android:textStyle="bold"
+        android:letterSpacing="-0.02"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/logoContainer" />
+        app:layout_constraintTop_toBottomOf="@id/logoCard" />
 
     <TextView
         android:id="@+id/textViewSubtitle"
@@ -46,21 +50,25 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:gravity="center"
-        android:text="Your complete pet health and companion care assistant."
+        android:text="Your complete companion health assistant. Keep your pets happy, tracked, and healthy everyday."
         android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="16sp"
+        android:lineSpacingMultiplier="1.2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textViewTitle" />
 
-    <!-- Navigation Buttons -->
+    <!-- Navigation Buttons with Premium Heights -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonLogin"
         style="@style/Widget.Material3.Button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:text="Login"
+        android:layout_height="56dp"
+        android:layout_marginBottom="14dp"
+        android:text="Login to Account"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="16dp"
         app:layout_constraintBottom_toTopOf="@id/buttonSignUp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -69,9 +77,12 @@
         android:id="@+id/buttonSignUp"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
-        android:text="Sign Up"
+        android:layout_height="56dp"
+        android:layout_marginBottom="30dp"
+        android:text="Get Started / Sign Up"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
