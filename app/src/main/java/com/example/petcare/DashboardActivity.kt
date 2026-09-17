@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,7 +28,7 @@ import com.example.petcare.data.PetEntity
 import com.example.petcare.data.SessionManager
 import com.example.petcare.data.TaskEntity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.tabs.TabLayout
 
 class DashboardActivity : AppCompatActivity() {
@@ -54,7 +55,6 @@ class DashboardActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_dashboard)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Apply only top and bottom insets to the main container
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
@@ -80,7 +80,7 @@ class DashboardActivity : AppCompatActivity() {
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
 
-        findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener {
+        findViewById<ExtendedFloatingActionButton>(R.id.fabAdd).setOnClickListener {
             if (currentTab == 0) {
                 startActivity(Intent(this, AddEditPetActivity::class.java))
             } else {
@@ -221,13 +221,28 @@ class DashboardActivity : AppCompatActivity() {
         inner class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
             val name: TextView = v.findViewById(R.id.textViewPetName)
             val breed: TextView = v.findViewById(R.id.textViewPetBreed)
-            val edit: ImageView = v.findViewById(R.id.buttonEditPet)
+            val ageChip: TextView = v.findViewById(R.id.textViewPetAgeChip)
+            val weightChip: TextView = v.findViewById(R.id.textViewPetWeightChip)
+            val edit: ImageButton = v.findViewById(R.id.buttonEditPet)
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_pet, parent, false))
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val pet = items[position]
             holder.name.text = pet.name
             holder.breed.text = pet.breed
+            
+            if (pet.age.isNullOrEmpty()) holder.ageChip.visibility = View.GONE
+            else {
+                holder.ageChip.visibility = View.VISIBLE
+                holder.ageChip.text = "${pet.age} Yrs"
+            }
+            
+            if (pet.weight.isNullOrEmpty()) holder.weightChip.visibility = View.GONE
+            else {
+                holder.weightChip.visibility = View.VISIBLE
+                holder.weightChip.text = "${pet.weight} kg"
+            }
+
             holder.edit.setOnClickListener { onEdit(pet) }
         }
         override fun getItemCount() = items.size
@@ -238,7 +253,7 @@ class DashboardActivity : AppCompatActivity() {
             val desc: TextView = v.findViewById(R.id.textViewTaskDescription)
             val pet: TextView = v.findViewById(R.id.textViewTaskPetName)
             val check: CheckBox = v.findViewById(R.id.checkboxTask)
-            val edit: ImageView = v.findViewById(R.id.buttonEditTask)
+            val edit: ImageButton = v.findViewById(R.id.buttonEditTask)
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_task, parent, false))
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
