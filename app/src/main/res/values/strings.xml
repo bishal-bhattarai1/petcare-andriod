@@ -2,8 +2,8 @@
     <string name="app_name">PetCare</string>
 
     <!-- Auth Design Labels -->
-    <string name="auth_welcome_back">Welcome back</string>
-    <string name="auth_login_subtitle">Access your orders, wishlist, and exclusive offers by logging in.</string>
+    <string name="auth_welcome_back">Welcome Pet Lover</string>
+    <string name="auth_login_subtitle">Log in to manage your pets’ health profiles and care schedules.</string>
     <string name="auth_signup_title">Sign up Account</string>
     <string name="auth_signup_subtitle">Create an account to start managing your pets’ health and schedules.</string>
 
@@ -25,10 +25,16 @@
 
     <string name="auth_or_divider">OR</string>
     <string name="auth_google_button">Continue with Google</string>
-    <string name="auth_apple_button">Continue with Apple</string>
 
     <string name="auth_no_account">Don’t have an account? Sign up</string>
     <string name="auth_already_account">Already have an account? Sign in</string>
+
+    <!-- Recovery Strings -->
+    <string name="recovery_title">Reset Password</string>
+    <string name="recovery_subtitle">Enter your registered email to set a new secure password.</string>
+    <string name="recovery_button">Update Password</string>
+    <string name="recovery_success">Password updated. You can login now.</string>
+    <string name="recovery_email_not_found">Email not found in our records.</string>
 
     <!-- Generic Auth -->
     <string name="auth_logout">Logout</string>

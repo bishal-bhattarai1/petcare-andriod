@@ -74,6 +74,24 @@ class AuthDatabaseHelper(context: Context) :
         return cursor.use { it.moveToFirst() }
     }
 
+    fun updatePassword(email: String, password: String): Boolean {
+        val values = ContentValues().apply {
+            put(COLUMN_PASSWORD_HASH, password.hashForEmail(email))
+        }
+
+        return try {
+            val rows = writableDatabase.update(
+                TABLE_USERS,
+                values,
+                "$COLUMN_EMAIL = ?",
+                arrayOf(email.normalizedEmail())
+            )
+            rows > 0
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     private fun String.normalizedEmail(): String = trim().lowercase()
 
     private fun String.hashForEmail(email: String): String {

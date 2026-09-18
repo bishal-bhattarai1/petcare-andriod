@@ -2,10 +2,13 @@ package com.example.petcare
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.method.HideReturnsTransformationMethod
+import android.text.method.PasswordTransformationMethod
 import android.view.View
-import android.widget.Toast
-import android.widget.TextView
 import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -48,7 +51,30 @@ class MainActivity : AppCompatActivity() {
 
         // Forgot Password
         findViewById<View>(R.id.forgotPasswordLink)?.setOnClickListener {
-            Toast.makeText(this, "Forgot Password functionality coming soon.", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
+        }
+
+        // Setup Password Eyes
+        setupPasswordToggle(R.id.loginPasswordInput, R.id.loginPasswordEye)
+        setupPasswordToggle(R.id.signUpPasswordInput, R.id.signUpPasswordEye)
+        setupPasswordToggle(R.id.signUpConfirmPasswordInput, R.id.signUpConfirmPasswordEye)
+    }
+
+    private fun setupPasswordToggle(inputId: Int, eyeId: Int) {
+        val input = findViewById<EditText>(inputId)
+        val eye = findViewById<ImageView>(eyeId)
+        var isVisible = false
+
+        eye.setOnClickListener {
+            isVisible = !isVisible
+            if (isVisible) {
+                input.transformationMethod = HideReturnsTransformationMethod.getInstance()
+                eye.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+            } else {
+                input.transformationMethod = PasswordTransformationMethod.getInstance()
+                eye.setImageResource(android.R.drawable.ic_menu_view)
+            }
+            input.setSelection(input.text.length)
         }
     }
 

@@ -91,11 +91,15 @@
                     android:textColorHint="@color/app_text_secondary" />
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:id="@+id/loginPasswordEye"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="16dp"
+                    android:layout_marginEnd="12dp"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:src="@android:drawable/ic_menu_view"
                     app:tint="@color/app_text_secondary" />
             </RelativeLayout>
@@ -190,32 +194,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
                     android:text="@string/auth_google_button"
-                    android:textColor="@color/app_text_primary"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/buttonAppleSignIn"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_pill_button_grey"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_apple"
-                    tools:ignore="ContentDescription" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:text="@string/auth_apple_button"
                     android:textColor="@color/app_text_primary"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -333,11 +311,15 @@
                     android:textColorHint="@color/app_text_secondary" />
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:id="@+id/signUpPasswordEye"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="16dp"
+                    android:layout_marginEnd="12dp"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:src="@android:drawable/ic_menu_view"
                     app:tint="@color/app_text_secondary" />
             </RelativeLayout>
@@ -370,11 +352,15 @@
                     android:textColorHint="@color/app_text_secondary" />
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:id="@+id/signUpConfirmPasswordEye"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="16dp"
+                    android:layout_marginEnd="12dp"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:src="@android:drawable/ic_menu_view"
                     app:tint="@color/app_text_secondary" />
             </RelativeLayout>
