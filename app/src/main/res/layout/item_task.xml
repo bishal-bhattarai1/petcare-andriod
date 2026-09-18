@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="16dp"
     app:cardCornerRadius="20dp"
-    app:cardElevation="0dp"
-    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+    app:cardElevation="2dp"
     app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -20,7 +20,6 @@
             android:layout_height="wrap_content"
             android:minWidth="0dp"
             android:minHeight="0dp"
-            app:buttonTint="?attr/colorPrimary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
@@ -29,51 +28,37 @@
             android:id="@+id/textViewTaskDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:layout_marginEnd="8dp"
             android:text="Task Description"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold"
             android:textColor="?attr/colorOnSurface"
             app:layout_constraintStart_toEndOf="@id/checkboxTask"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toStartOf="@id/buttonEditTask" />
 
-        <LinearLayout
-            android:id="@+id/layoutTaskMeta"
+        <TextView
+            android:id="@+id/textViewTaskPetName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
             android:layout_marginTop="2dp"
+            android:text="Pet: Buddy"
+            android:textSize="13sp"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/textViewTaskDescription"
             app:layout_constraintTop_toBottomOf="@id/textViewTaskDescription"
-            app:layout_constraintEnd_toEndOf="@id/textViewTaskDescription">
+            app:layout_constraintEnd_toEndOf="@id/textViewTaskDescription" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🐾"
-                android:textSize="12sp"
-                android:layout_marginEnd="4dp" />
-
-            <TextView
-                android:id="@+id/textViewTaskPetName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Buddy"
-                android:textSize="13sp"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <ImageButton
+        <ImageView
             android:id="@+id/buttonEditTask"
             android:layout_width="44dp"
             android:layout_height="44dp"
+            android:padding="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_edit"
-            app:tint="?attr/colorPrimary"
+            app:tint="?attr/colorOnSurfaceVariant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"

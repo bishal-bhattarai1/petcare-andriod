@@ -80,11 +80,10 @@ class SignUpActivity : AppCompatActivity() {
             val newUser = UserEntity(name, email, hashedPassword)
             database.userDao().insertUser(newUser)
 
-            // 7. Create Session and navigate to Dashboard
-            sessionManager.createSession(name, email)
-            Toast.makeText(this, "Registration Successful!", Toast.LENGTH_SHORT).show()
+            // 7. Redirect to Login screen
+            Toast.makeText(this, "Registration Successful! Please log in.", Toast.LENGTH_SHORT).show()
 
-            val intent = Intent(this, DashboardActivity::class.java)
+            val intent = Intent(this, LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()

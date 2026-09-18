@@ -1,27 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Premium Midnight & Lavender Palette -->
-    <color name="primary">#D0BCFF</color>
-    <color name="onPrimary">#381E72</color>
-    <color name="primaryContainer">#4F378B</color>
-    <color name="onPrimaryContainer">#EADDFF</color>
-
-    <color name="secondary">#CCC2DC</color>
-    <color name="onSecondary">#332D41</color>
-    <color name="secondaryContainer">#4A4458</color>
-    <color name="onSecondaryContainer">#E8DEF8</color>
-
-    <color name="background">#1C1B1F</color>
-    <color name="onBackground">#E6E1E5</color>
-    <color name="surface">#1C1B1F</color>
-    <color name="onSurface">#E6E1E5</color>
-    <color name="surfaceVariant">#49454F</color>
-    <color name="onSurfaceVariant">#CAC4D0</color>
-
-    <color name="error">#F2B8B5</color>
-    <color name="onError">#601410</color>
-
-    <!-- Branding specific -->
-    <color name="pet_indigo">#3F51B5</color>
-    <color name="pet_lavender">#E6E6FA</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="petcare_primary">#156E6A</color>
+    <color name="petcare_on_primary">#FFFFFFFF</color>
+    <color name="petcare_primary_container">#D5F2EF</color>
+    <color name="petcare_on_primary_container">#063F3C</color>
+    <color name="petcare_secondary">#8A5A28</color>
+    <color name="petcare_on_secondary">#FFFFFFFF</color>
+    <color name="petcare_secondary_container">#FFE2BE</color>
+    <color name="petcare_on_secondary_container">#4C2D08</color>
+    <color name="petcare_tertiary">#536A92</color>
+    <color name="petcare_error">#BA1A1A</color>
+    <color name="petcare_surface">#FAFCFB</color>
+    <color name="petcare_surface_container_low">#F2F7F5</color>
+    <color name="petcare_surface_container">#EEF4F2</color>
+    <color name="petcare_surface_container_high">#E6EFEC</color>
+    <color name="petcare_on_surface">#16211F</color>
+    <color name="petcare_on_surface_variant">#5D6A66</color>
+    <color name="petcare_outline">#B9C7C2</color>
+    <color name="petcare_outline_variant">#D9E4E0</color>
+    <color name="petcare_success">#2F7D4F</color>
+    <color name="petcare_danger">#C53A35</color>
 </resources>
