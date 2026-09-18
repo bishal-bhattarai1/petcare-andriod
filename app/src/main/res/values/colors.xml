@@ -2,24 +2,20 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="petcare_primary">#156E6A</color>
-    <color name="petcare_on_primary">#FFFFFFFF</color>
-    <color name="petcare_primary_container">#D5F2EF</color>
-    <color name="petcare_on_primary_container">#063F3C</color>
-    <color name="petcare_secondary">#8A5A28</color>
-    <color name="petcare_on_secondary">#FFFFFFFF</color>
-    <color name="petcare_secondary_container">#FFE2BE</color>
-    <color name="petcare_on_secondary_container">#4C2D08</color>
-    <color name="petcare_tertiary">#536A92</color>
-    <color name="petcare_error">#BA1A1A</color>
-    <color name="petcare_surface">#FAFCFB</color>
-    <color name="petcare_surface_container_low">#F2F7F5</color>
-    <color name="petcare_surface_container">#EEF4F2</color>
-    <color name="petcare_surface_container_high">#E6EFEC</color>
-    <color name="petcare_on_surface">#16211F</color>
-    <color name="petcare_on_surface_variant">#5D6A66</color>
-    <color name="petcare_outline">#B9C7C2</color>
-    <color name="petcare_outline_variant">#D9E4E0</color>
-    <color name="petcare_success">#2F7D4F</color>
-    <color name="petcare_danger">#C53A35</color>
+
+    <!-- Design Palette -->
+    <color name="app_bg">#FFFFFF</color>
+    <color name="app_text_primary">#000000</color>
+    <color name="app_text_secondary">#757575</color>
+    <color name="app_input_bg">#F5F5F5</color>
+    <color name="app_accent_red">#FF4B4B</color>
+    <color name="app_divider">#EEEEEE</color>
+    <color name="status_green">#4CAF50</color>
+
+    <!-- Legacy/Shared colors used in other layouts -->
+    <color name="brand_purple">#3F51B5</color>
+    <color name="app_bg_light">#F2F4F7</color>
+    <color name="text_dark">#333333</color>
+    <color name="text_grey">#757575</color>
+    <color name="accent_orange">#FF9800</color>
 </resources>

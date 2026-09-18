@@ -36,11 +36,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
 
-    // Room Database
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    annotationProcessor(libs.androidx.room.compiler)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)

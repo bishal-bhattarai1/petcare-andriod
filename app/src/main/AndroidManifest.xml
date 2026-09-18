@@ -22,29 +22,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".LoginActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".SignUpActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
             android:name=".DashboardActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".ForgotPasswordActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".AddEditPetActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".AddEditTaskActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:exported="false" />
     </application>
 
 </manifest>

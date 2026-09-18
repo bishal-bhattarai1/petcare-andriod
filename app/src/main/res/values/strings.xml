@@ -1,3 +1,35 @@
 <resources>
     <string name="app_name">PetCare</string>
+
+    <!-- Auth Design Labels -->
+    <string name="auth_welcome_back">Welcome back</string>
+    <string name="auth_login_subtitle">Access your orders, wishlist, and exclusive offers by logging in.</string>
+    <string name="auth_signup_title">Sign up Account</string>
+    <string name="auth_signup_subtitle">Create an account to start managing your pets’ health and schedules.</string>
+
+    <string name="auth_label_name">Name</string>
+    <string name="auth_label_email">Email</string>
+    <string name="auth_label_password">Password</string>
+    <string name="auth_label_confirm_password">Confirm Password</string>
+
+    <string name="auth_hint_name">Enter you name</string>
+    <string name="auth_hint_email">Enter you email</string>
+    <string name="auth_hint_password">Enter you password</string>
+    <string name="auth_hint_confirm_password">Repeat your password</string>
+
+    <string name="auth_remember_me">Remember me</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+
+    <string name="auth_signin_button">Sign in</string>
+    <string name="auth_signup_button">Sign up</string>
+
+    <string name="auth_or_divider">OR</string>
+    <string name="auth_google_button">Continue with Google</string>
+    <string name="auth_apple_button">Continue with Apple</string>
+
+    <string name="auth_no_account">Don’t have an account? Sign up</string>
+    <string name="auth_already_account">Already have an account? Sign in</string>
+
+    <!-- Generic Auth -->
+    <string name="auth_logout">Logout</string>
 </resources>

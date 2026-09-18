@@ -1,26 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
     <style name="Base.Theme.PetCare" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">#9BD8D3</item>
-        <item name="colorOnPrimary">#003735</item>
-        <item name="colorPrimaryContainer">#0D5551</item>
-        <item name="colorOnPrimaryContainer">#D5F2EF</item>
-        <item name="colorSecondary">#F2C693</item>
-        <item name="colorOnSecondary">#4B2C07</item>
-        <item name="colorSecondaryContainer">#674112</item>
-        <item name="colorOnSecondaryContainer">#FFE2BE</item>
-        <item name="colorTertiary">#B9C7E8</item>
-        <item name="colorError">#FFB4AB</item>
-        <item name="colorSurface">#111816</item>
-        <item name="colorSurfaceContainerLow">#17211E</item>
-        <item name="colorSurfaceContainer">#1D2825</item>
-        <item name="colorSurfaceContainerHigh">#27332F</item>
-        <item name="colorOnSurface">#E1E8E5</item>
-        <item name="colorOnSurfaceVariant">#BDC9C5</item>
-        <item name="colorOutline">#7F8D88</item>
-        <item name="colorOutlineVariant">#3F4D49</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">#111816</item>
+        <item name="colorPrimary">@color/black</item>
+        <item name="android:windowBackground">@color/app_bg</item>
+        <item name="colorSurface">@color/app_bg</item>
+        <item name="colorOnSurface">@color/app_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/app_text_secondary</item>
     </style>
-
-    <style name="Theme.PetCare" parent="Base.Theme.PetCare" />
 </resources>
