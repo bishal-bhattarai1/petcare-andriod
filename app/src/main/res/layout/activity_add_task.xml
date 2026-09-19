@@ -79,7 +79,7 @@
                 android:layout_marginTop="24dp"
                 android:text="Delegate this task to others"
                 android:textColor="@color/app_text_primary"
-                android:buttonTint="@color/app_primary_cyan" />
+                android:buttonTint="@color/black" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSaveTask"

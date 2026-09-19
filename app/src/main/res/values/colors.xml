@@ -4,20 +4,19 @@
     <color name="white">#FFFFFF</color>
     <color name="real_white">#FFFFFF</color>
 
-    <!-- Restore White Theme Background -->
     <color name="app_bg">#FFFFFF</color>
-
-    <!-- Primary Theme Accent -->
-    <color name="app_primary_cyan">#BEF0FF</color>
-
     <color name="app_text_primary">#000000</color>
-    <color name="app_text_secondary">#444444</color>
+    <color name="app_text_secondary">#757575</color>
 
-    <color name="card_bg">#F2F4F7</color> <!-- Subtle grey cards for white theme -->
+    <color name="card_bg">#F2F4F7</color>
     <color name="app_input_bg">#F5F5F5</color>
+    <color name="app_divider">#EEEEEE</color>
 
     <color name="app_accent_red">#FF4B4B</color>
     <color name="status_green">#4CAF50</color>
+    <color name="indicator_grey">#E0E0E0</color>
+    <color name="indicator_dark">#333333</color>
+
+    <!-- Legacy/Other -->
     <color name="indicator_orange">#FF9800</color>
-    <color name="app_divider">#EEEEEE</color>
 </resources>

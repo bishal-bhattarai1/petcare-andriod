@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : AppCompatActivity() {
     private lateinit var database: AuthDatabaseHelper
+    private lateinit var sessionManager: SessionManager
     private lateinit var loginPanel: View
     private lateinit var signUpPanel: View
 
@@ -26,6 +27,13 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         database = AuthDatabaseHelper(this)
+        sessionManager = SessionManager(this)
+
+        if (sessionManager.isLoggedIn()) {
+            startActivity(Intent(this, DashboardActivity::class.java))
+            finish()
+            return
+        }
 
         // Ensure status bar icons are dark on light background
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
@@ -89,12 +97,17 @@ class MainActivity : AppCompatActivity() {
 
         when {
             email.isBlank() || password.isBlank() -> showMessage("Enter email and password.")
-            database.isValidLogin(email, password) -> {
-                val intent = Intent(this, DashboardActivity::class.java)
-                startActivity(intent)
-                finish()
+            else -> {
+                val userName = database.getUserName(email, password)
+                if (userName != null) {
+                    sessionManager.saveUser(userName, email)
+                    val intent = Intent(this, DashboardActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                } else {
+                    showMessage("Invalid email or password.")
+                }
             }
-            else -> showMessage("Invalid email or password.")
         }
     }
 

@@ -36,6 +36,29 @@
     <string name="recovery_success">Password updated. You can login now.</string>
     <string name="recovery_email_not_found">Email not found in our records.</string>
 
+    <!-- Add Pet Screen Labels -->
+    <string name="add_pet_title">Add pet</string>
+    <string name="add_pet_section_basic">Basic info</string>
+    <string name="add_pet_section_health">Health info</string>
+    <string name="add_pet_section_notes">Notes</string>
+
+    <string name="add_pet_label_name">Pet name</string>
+    <string name="add_pet_label_species">Species</string>
+    <string name="add_pet_label_breed">Breed</string>
+    <string name="add_pet_label_age">Age</string>
+    <string name="add_pet_label_weight">Weight</string>
+    <string name="add_pet_label_diet">Dietary preferences</string>
+    <string name="add_pet_label_vaccine">Vaccination date</string>
+    <string name="add_pet_label_reminder">Remind me for this vaccination</string>
+    <string name="add_pet_label_allergies">Allergies</string>
+    <string name="add_pet_label_toys">Favourite toys</string>
+    <string name="add_pet_label_notes">Notes</string>
+
+    <string name="add_pet_hint_date">Select date</string>
+    <string name="add_pet_hint_species_other">Enter species</string>
+    <string name="add_pet_button_save">Save pet</string>
+    <string name="add_pet_completion_text">Profile %d%% complete</string>
+
     <!-- Generic Auth -->
     <string name="auth_logout">Logout</string>
 </resources>

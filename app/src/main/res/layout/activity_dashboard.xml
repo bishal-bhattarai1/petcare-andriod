@@ -7,342 +7,252 @@
     android:layout_height="match_parent"
     android:background="@color/app_bg">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/app_bg"
-        app:elevation="0dp">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="24dp"
-            android:paddingVertical="16dp">
-
-            <TextView
-                android:id="@+id/textViewHeader"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Dashboard"
-                android:textColor="@color/app_text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/imageProfile"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@color/app_primary_cyan"
-                android:padding="2dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-
-            <ImageView
-                android:id="@+id/buttonNotifications"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginEnd="16dp"
-                android:src="@android:drawable/ic_popup_reminder"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/imageProfile"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/app_text_primary" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </com.google.android.material.appbar.AppBarLayout>
-
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:paddingBottom="80dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="16dp">
 
-            <TextView
-                android:id="@+id/textViewWelcome"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Hey, Pet Lover!"
-                android:textColor="@color/app_text_primary"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:letterSpacing="-0.01" />
-
-            <TextView
-                android:id="@+id/textViewDate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Your companion health center"
-                android:textColor="@color/app_text_secondary"
-                android:textSize="14sp" />
-
-            <!-- Dashboard Grid -->
-            <GridLayout
+            <!-- Header Row -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:columnCount="2"
-                android:useDefaultMargins="false">
+                android:layout_marginTop="8dp">
 
-                <!-- Remaining Days Card -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Widget.Material3.CardView.Elevated"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="1dp"
-                    app:cardBackgroundColor="@color/card_bg"
-                    app:strokeWidth="0dp">
+                    android:orientation="vertical">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/textGreetingLabel"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="20dp">
+                        android:text="Good morning"
+                        android:textColor="@color/app_text_secondary"
+                        android:textSize="14sp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Health Score"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/app_text_primary"/>
+                    <TextView
+                        android:id="@+id/textUserName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Emily"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
-                        <FrameLayout
-                            android:layout_width="80dp"
-                            android:layout_height="80dp"
-                            android:layout_marginVertical="16dp">
+                <FrameLayout
+                    android:id="@+id/buttonReminders"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_pill_input"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                            <ProgressBar
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:indeterminate="false"
-                                android:max="100"
-                                android:progress="85"
-                                android:progressDrawable="@drawable/bg_circle_progress"
-                                style="?android:attr/progressBarStyleHorizontal" />
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_popup_reminder"
+                        app:tint="@color/indicator_dark" />
+                </FrameLayout>
+            </RelativeLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:text="85%"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-                        </FrameLayout>
+            <!-- Tasks Summary Banner -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonDetails"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:text="Details"
-                            android:textSize="11sp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            app:backgroundTint="@color/black"
-                            android:textColor="@color/real_white"
-                            app:cornerRadius="12dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Activity Card -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Widget.Material3.CardView.Elevated"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="1dp"
-                    app:cardBackgroundColor="@color/card_bg"
-                    app:strokeWidth="0dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_checklist"
+                        app:tint="@color/status_green" />
+
+                    <TextView
+                        android:id="@+id/textDailySummary"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
+                        android:layout_marginStart="8dp"
+                        android:text="3 tasks due today across your pets"
+                        android:textColor="@color/indicator_dark"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Active Profile"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/app_text_primary" />
+            <!-- Section Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="🐾"
-                            android:textSize="32sp" />
-
-                        <TextView
-                            android:id="@+id/textViewPetName"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="No Pet Yet"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Tap to add"
-                            android:textColor="@color/app_text_secondary"
-                            android:textSize="11sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonAddPet"
-                            style="@style/Widget.Material3.Button"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:layout_marginTop="16dp"
-                            android:text="Add Pet"
-                            android:textSize="11sp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            app:backgroundTint="@color/black"
-                            android:textColor="@color/real_white"
-                            app:cornerRadius="12dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Expense Card -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Widget.Material3.CardView.Elevated"
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="1dp"
-                    app:cardBackgroundColor="@color/card_bg"
-                    app:strokeWidth="0dp">
+                    android:text="Your pets"
+                    android:textColor="@color/app_text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Total Spend"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/app_text_primary" />
-
-                        <TextView
-                            android:id="@+id/textViewExpense"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="$0.00"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/app_text_primary" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="This month"
-                            android:textColor="@color/app_text_secondary"
-                            android:textSize="11sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonViewHistory"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="View History"
-                            android:textSize="11sp"
-                            android:paddingStart="0dp"
-                            android:textColor="@color/app_text_primary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Tasks Card -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Widget.Material3.CardView.Elevated"
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/textPetCount"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="1dp"
-                    app:cardBackgroundColor="@color/card_bg"
-                    app:strokeWidth="0dp">
+                    android:layout_alignParentEnd="true"
+                    android:text="2 pets"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="13sp" />
+            </RelativeLayout>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+            <!-- Pet List (RecyclerView Placeholder) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewPets"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:nestedScrollingEnabled="false"
+                tools:itemCount="2"
+                tools:listitem="@layout/item_pet_dashboard" />
+
+            <!-- Add Another Pet Row -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAddPet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_dashed_card"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:padding="22dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@android:drawable/ic_input_add"
+                        app:tint="@color/app_text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
+                        android:layout_marginStart="8dp"
+                        android:text="Add another pet"
+                        android:textColor="@color/app_text_secondary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Care Tasks"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/app_text_primary" />
-
-                        <TextView
-                            android:id="@+id/textViewTaskCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="0 Done"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <ProgressBar
-                            android:layout_width="match_parent"
-                            android:layout_height="4dp"
-                            android:layout_marginTop="12dp"
-                            android:progress="0"
-                            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                            android:progressTint="@color/app_primary_cyan" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonManageTasks"
-                            style="@style/Widget.Material3.Button"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:layout_marginTop="16dp"
-                            android:text="Manage"
-                            android:textSize="11sp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            app:backgroundTint="@color/black"
-                            android:textColor="@color/real_white"
-                            app:cornerRadius="12dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-            </GridLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Navigation Layer -->
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_gravity="bottom"
+        android:backgroundTint="@color/white"
+        app:fabAlignmentMode="center"
+        app:fabCradleMargin="12dp"
+        app:fabCradleRoundedCornerRadius="32dp"
+        app:contentInsetStart="0dp"
+        app:contentInsetEnd="0dp"
+        app:elevation="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_nav_home" app:tint="@color/black" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Home" android:textSize="12sp" android:textColor="@color/black" android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_nav_tasks" app:tint="@color/app_text_secondary" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tasks" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
+            </LinearLayout>
+
+            <!-- FAB Space -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.8" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_nav_expenses" app:tint="@color/app_text_secondary" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Expenses" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_nav_profile" app:tint="@color/app_text_secondary" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Profile" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_add_black"
+        app:backgroundTint="@color/black"
+        app:tint="@color/white"
+        app:fabSize="normal"
+        app:layout_anchor="@id/bottomAppBar"
+        app:maxImageSize="36dp"
+        app:elevation="16dp"
+        tools:ignore="ContentDescription" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

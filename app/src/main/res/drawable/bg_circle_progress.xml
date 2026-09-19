@@ -16,7 +16,7 @@
                 android:innerRadiusRatio="3"
                 android:thicknessRatio="12"
                 android:useLevel="true">
-                <solid android:color="@color/app_primary_cyan" />
+                <solid android:color="@color/black" />
             </shape>
         </rotate>
     </item>
