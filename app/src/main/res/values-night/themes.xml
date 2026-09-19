@@ -6,5 +6,7 @@
         <item name="colorSurface">@color/app_bg</item>
         <item name="colorOnSurface">@color/app_text_primary</item>
         <item name="colorOnSurfaceVariant">@color/app_text_secondary</item>
+        <item name="android:statusBarColor">@color/app_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

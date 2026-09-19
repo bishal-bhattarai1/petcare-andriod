@@ -14,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
+import androidx.core.view.WindowInsetsControllerCompat
+
 class MainActivity : AppCompatActivity() {
     private lateinit var database: AuthDatabaseHelper
     private lateinit var loginPanel: View
@@ -24,6 +26,9 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         database = AuthDatabaseHelper(this)
+
+        // Ensure status bar icons are dark on light background
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())

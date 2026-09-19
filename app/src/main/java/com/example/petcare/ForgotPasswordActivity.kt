@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
+import androidx.core.view.WindowInsetsControllerCompat
+
 class ForgotPasswordActivity : AppCompatActivity() {
     private lateinit var database: AuthDatabaseHelper
 
@@ -20,6 +22,9 @@ class ForgotPasswordActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_forgot_password)
         database = AuthDatabaseHelper(this)
+
+        // Ensure status bar icons are dark on light background
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())

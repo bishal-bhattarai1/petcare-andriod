@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="real_white">#FFFFFF</color>
 
-    <!-- Design Palette -->
+    <!-- Restore White Theme Background -->
     <color name="app_bg">#FFFFFF</color>
-    <color name="app_text_primary">#000000</color>
-    <color name="app_text_secondary">#757575</color>
-    <color name="app_input_bg">#F5F5F5</color>
-    <color name="app_accent_red">#FF4B4B</color>
-    <color name="app_divider">#EEEEEE</color>
-    <color name="status_green">#4CAF50</color>
 
-    <!-- Legacy/Shared colors used in other layouts -->
-    <color name="brand_purple">#3F51B5</color>
-    <color name="app_bg_light">#F2F4F7</color>
-    <color name="text_dark">#333333</color>
-    <color name="text_grey">#757575</color>
-    <color name="accent_orange">#FF9800</color>
+    <!-- Primary Theme Accent -->
+    <color name="app_primary_cyan">#BEF0FF</color>
+
+    <color name="app_text_primary">#000000</color>
+    <color name="app_text_secondary">#444444</color>
+
+    <color name="card_bg">#F2F4F7</color> <!-- Subtle grey cards for white theme -->
+    <color name="app_input_bg">#F5F5F5</color>
+
+    <color name="app_accent_red">#FF4B4B</color>
+    <color name="status_green">#4CAF50</color>
+    <color name="indicator_orange">#FF9800</color>
+    <color name="app_divider">#EEEEEE</color>
 </resources>

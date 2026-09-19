@@ -10,6 +10,7 @@ class AuthDatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
+        // Users Table
         db.execSQL(
             """
             CREATE TABLE $TABLE_USERS (
@@ -21,11 +22,43 @@ class AuthDatabaseHelper(context: Context) :
             )
             """.trimIndent()
         )
+
+        // Pets Table
+        db.execSQL(
+            """
+            CREATE TABLE pets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                breed TEXT,
+                age INTEGER,
+                owner_id INTEGER,
+                FOREIGN KEY(owner_id) REFERENCES $TABLE_USERS($COLUMN_ID)
+            )
+            """.trimIndent()
+        )
+
+        // Tasks and Expenses Table
+        db.execSQL(
+            """
+            CREATE TABLE tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pet_id INTEGER,
+                description TEXT NOT NULL,
+                is_completed INTEGER DEFAULT 0,
+                expense_amount REAL DEFAULT 0.0,
+                FOREIGN KEY(pet_id) REFERENCES pets(id)
+            )
+            """.trimIndent()
+        )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
-        onCreate(db)
+        if (oldVersion < 2) {
+            // Simple migration for demo
+            db.execSQL("DROP TABLE IF EXISTS pets")
+            db.execSQL("DROP TABLE IF EXISTS tasks")
+            onCreate(db)
+        }
     }
 
     fun createUser(name: String, email: String, password: String): Boolean {
@@ -47,7 +80,7 @@ class AuthDatabaseHelper(context: Context) :
     fun isValidLogin(email: String, password: String): Boolean {
         val cursor = readableDatabase.query(
             TABLE_USERS,
-            arrayOf(COLUMN_ID),
+            arrayOf(COLUMN_ID, COLUMN_NAME),
             "$COLUMN_EMAIL = ? AND $COLUMN_PASSWORD_HASH = ?",
             arrayOf(email.normalizedEmail(), password.hashForEmail(email)),
             null,
@@ -101,8 +134,8 @@ class AuthDatabaseHelper(context: Context) :
     }
 
     companion object {
-        private const val DATABASE_NAME = "petcare.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_NAME = "petcare_v2.db"
+        private const val DATABASE_VERSION = 2
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_NAME = "name"

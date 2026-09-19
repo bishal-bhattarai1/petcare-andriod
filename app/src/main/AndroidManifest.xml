@@ -25,6 +25,12 @@
             android:name=".DashboardActivity"
             android:exported="false" />
         <activity
+            android:name=".AddEditPetActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AddTaskActivity"
+            android:exported="false" />
+        <activity
             android:name=".ForgotPasswordActivity"
             android:exported="false" />
     </application>
