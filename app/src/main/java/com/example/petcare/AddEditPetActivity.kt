@@ -35,6 +35,21 @@ class AddEditPetActivity : AppCompatActivity() {
     private lateinit var progressCompletion: LinearProgressIndicator
     private lateinit var textCompletion: TextView
     private lateinit var switchReminder: SwitchMaterial
+    private lateinit var layoutPhotos: LinearLayout
+    
+    private var editingPetId: Long = -1L
+    private val selectedPhotos = mutableListOf<String>()
+
+    private val pickMultipleMedia = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
+        if (uris.isNotEmpty()) {
+            uris.forEach { uri ->
+                contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                selectedPhotos.add(uri.toString())
+            }
+            renderThumbnails()
+            updateProgress()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +69,50 @@ class AddEditPetActivity : AppCompatActivity() {
         }
 
         initViews()
+        
+        editingPetId = intent.getLongExtra("EXTRA_PET_ID", -1L)
+        if (editingPetId != -1L) {
+            loadExistingPet(editingPetId)
+        }
+        
         setupListeners()
+    }
+
+    private fun loadExistingPet(id: Long) {
+        val data = database.getPetById(id) ?: return
+        
+        inputPetName.setText(data.getAsString("name"))
+        inputBreed.setText(data.getAsString("breed"))
+        inputAge.setText(data.getAsString("age"))
+        inputWeight.setText(data.getAsString("weight"))
+        inputDiet.setText(data.getAsString("diet"))
+        inputVaccineDate.setText(data.getAsString("vaccine_date"))
+        inputAllergies.setText(data.getAsString("allergies"))
+        inputToys.setText(data.getAsString("toys"))
+        inputNotes.setText(data.getAsString("notes"))
+        
+        val species = data.getAsString("species")
+        when (species) {
+            "Dog" -> chipGroupSpecies.check(R.id.chipDog)
+            "Cat" -> chipGroupSpecies.check(R.id.chipCat)
+            else -> {
+                chipGroupSpecies.check(R.id.chipOther)
+                inputOtherSpecies.setText(species)
+                findViewById<View>(R.id.layoutOtherSpecies).visibility = View.VISIBLE
+            }
+        }
+        
+        val reminder = data.getAsInteger("reminder_enabled") == 1
+        switchReminder.isChecked = reminder
+        
+        // Photos
+        val photos = database.getPetPhotos(id)
+        selectedPhotos.clear()
+        selectedPhotos.addAll(photos)
+        renderThumbnails()
+        
+        findViewById<TextView>(R.id.textCompletion).text = "Editing Profile"
+        findViewById<Button>(R.id.buttonSavePet).text = "Update Pet"
     }
 
     private fun initViews() {
@@ -73,9 +131,45 @@ class AddEditPetActivity : AppCompatActivity() {
         progressCompletion = findViewById(R.id.progressCompletion)
         textCompletion = findViewById(R.id.textCompletion)
         switchReminder = findViewById(R.id.switchReminder)
+        layoutPhotos = findViewById(R.id.layoutPetPhotos)
     }
 
+    private fun renderThumbnails() {
+        // Keep the "Add More" button which is at the end or start.
+        // In XML it is at index 0.
+        val addMoreButton = findViewById<View>(R.id.buttonAddMorePhotos)
+        layoutPhotos.removeAllViews()
+        layoutPhotos.addView(addMoreButton)
+
+        selectedPhotos.forEach { uriString ->
+            val imageView = com.google.android.material.imageview.ShapeableImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(52.dp(), 52.dp()).apply { marginEnd = 8.dp() }
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                shapeAppearanceModel = com.google.android.material.shape.ShapeAppearanceModel.builder()
+                    .setAllCorners(com.google.android.material.shape.CornerFamily.ROUNDED, 8.dp().toFloat())
+                    .build()
+                setImageURI(android.net.Uri.parse(uriString))
+                setOnClickListener {
+                    selectedPhotos.remove(uriString)
+                    renderThumbnails()
+                    updateProgress()
+                }
+            }
+            layoutPhotos.addView(imageView, 0) // Add before the plus button
+        }
+    }
+
+    private fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
+
     private fun setupListeners() {
+        findViewById<View>(R.id.buttonAddMorePhotos).setOnClickListener {
+            pickMultipleMedia.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+        
+        findViewById<View>(R.id.buttonCamera).setOnClickListener {
+            pickMultipleMedia.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+
         // Species Toggle
         chipGroupSpecies.setOnCheckedStateChangeListener { _, checkedIds ->
             val isOther = checkedIds.contains(R.id.chipOther)
@@ -110,21 +204,41 @@ class AddEditPetActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val saved = database.savePet(
-                name,
-                getSelectedSpecies(),
-                inputBreed.text.toString(),
-                inputAge.text.toString().toIntOrNull() ?: 0,
-                inputWeight.text.toString().toDoubleOrNull() ?: 0.0,
-                inputDiet.text.toString(),
-                inputVaccineDate.text.toString(),
-                switchReminder.isChecked,
-                inputAllergies.text.toString(),
-                inputToys.text.toString(),
-                inputNotes.text.toString()
-            )
+            val petId: Long
+            if (editingPetId != -1L) {
+                val success = database.updatePet(
+                    editingPetId,
+                    name,
+                    getSelectedSpecies(),
+                    inputBreed.text.toString(),
+                    inputAge.text.toString().toIntOrNull() ?: 0,
+                    inputWeight.text.toString().toDoubleOrNull() ?: 0.0,
+                    inputDiet.text.toString(),
+                    inputVaccineDate.text.toString(),
+                    switchReminder.isChecked,
+                    inputAllergies.text.toString(),
+                    inputToys.text.toString(),
+                    inputNotes.text.toString()
+                )
+                petId = if (success) editingPetId else -1L
+            } else {
+                petId = database.savePet(
+                    name,
+                    getSelectedSpecies(),
+                    inputBreed.text.toString(),
+                    inputAge.text.toString().toIntOrNull() ?: 0,
+                    inputWeight.text.toString().toDoubleOrNull() ?: 0.0,
+                    inputDiet.text.toString(),
+                    inputVaccineDate.text.toString(),
+                    switchReminder.isChecked,
+                    inputAllergies.text.toString(),
+                    inputToys.text.toString(),
+                    inputNotes.text.toString()
+                )
+            }
 
-            if (saved) {
+            if (petId != -1L) {
+                database.savePetPhotos(petId, selectedPhotos)
                 Toast.makeText(this, "Pet profile saved successfully!", Toast.LENGTH_SHORT).show()
                 finish()
             } else {

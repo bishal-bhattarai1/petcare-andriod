@@ -2,7 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <application
+        android:name=".PetCareApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -23,7 +27,8 @@
         </activity>
         <activity
             android:name=".DashboardActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:launchMode="singleTop" />
         <activity
             android:name=".AddEditPetActivity"
             android:exported="false" />
@@ -31,7 +36,61 @@
             android:name=".AddTaskActivity"
             android:exported="false" />
         <activity
+            android:name=".TasksActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name=".NotificationsActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name=".ChecklistActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ExpensesActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+        <activity
+            android:name=".AddExpenseActivity"
+            android:exported="false" />
+        <activity
             android:name=".ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PersonalInfoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ChangePasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DelegateContactActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PetDetailsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".LocationsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ShareReceiverActivity"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".ReminderReceiver"
+            android:enabled="true"
             android:exported="false" />
     </application>
 

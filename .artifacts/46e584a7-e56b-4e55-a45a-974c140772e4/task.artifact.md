@@ -1,0 +1,9 @@
+- `[x]` Update `DashboardActivity.kt` with full Profile tab functionality:
+    - `[x]` Add `pickMedia` launcher for profile photos.
+    - `[x]` Sync `bindAccount` to clear `imageTintList` on all avatars.
+    - `[x]` Add theme selection dialog to `setupPreferences`.
+    - `[x]` Implement `showEditInfoDialog` (name-only, read-only email).
+    - `[x]` Implement `showChangePasswordDialog` (with auto-logout).
+    - `[x]` Add support link click listeners.
+- `[x]` Verify UI consistency across both Dashboard tab and standalone Profile screen.
+- `[x]` Final build and walkthrough.

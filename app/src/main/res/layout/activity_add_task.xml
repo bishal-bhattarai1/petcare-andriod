@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/app_bg">
@@ -11,16 +12,53 @@
         android:background="@color/app_bg"
         app:elevation="0dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="?attr/homeAsUpIndicator"
-            app:title="New Care Routine"
-            app:titleCentered="true" />
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                app:navigationIcon="?attr/homeAsUpIndicator">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:text="Add care task"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textPetSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:includeFontPadding="false"
+                        android:text="Choose pet"
+                        android:textColor="@color/app_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </androidx.appcompat.widget.Toolbar>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/app_divider" />
+        </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
@@ -30,69 +68,455 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="28dp">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="104dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Plan a care activity"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
+                android:text="TASK DETAILS"
+                android:textColor="@color/app_text_secondary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
-            <!-- Task Description -->
-            <EditText
-                android:id="@+id/editTextDesc"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="32dp"
-                android:background="@drawable/bg_pill_input"
-                android:hint="What needs to be done?"
-                android:inputType="textCapSentences"
-                android:paddingHorizontal="24dp" />
-
-            <!-- Expense Tracking -->
-            <TextView
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutPetName"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:layout_marginStart="8dp"
-                android:text="Estimated Expense"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <EditText
-                android:id="@+id/editTextExpense"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input"
-                android:hint="$0.00"
-                android:inputType="numberDecimal"
-                android:paddingHorizontal="24dp" />
+                app:boxBackgroundColor="@color/app_input_bg"
+                app:boxCornerRadiusBottomEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxStrokeColor="@color/app_divider"
+                app:endIconTint="@color/app_text_secondary"
+                app:hintTextColor="@color/app_text_secondary"
+                app:prefixText="+ "
+                app:prefixTextColor="@color/app_text_primary">
 
-            <!-- Delegation Placeholder -->
-            <CheckBox
-                android:id="@+id/checkDelegate"
+                <AutoCompleteTextView
+                    android:id="@+id/inputPetName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Choose pet *"
+                    android:inputType="none"
+                    android:textColor="@color/app_text_primary"
+                    android:textColorHint="@color/app_text_secondary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutTaskTitle"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Delegate this task to others"
-                android:textColor="@color/app_text_primary"
-                android:buttonTint="@color/black" />
+                android:layout_marginTop="8dp"
+                app:boxBackgroundColor="@color/app_input_bg"
+                app:boxCornerRadiusBottomEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxStrokeColor="@color/app_divider"
+                app:hintTextColor="@color/app_text_secondary">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonSaveTask"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editTextDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Task title *"
+                    android:inputType="textCapSentences"
+                    android:textColor="@color/app_text_primary"
+                    android:textColorHint="@color/app_text_secondary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Category"
+                android:textColor="@color/app_text_secondary"
+                android:textSize="11sp" />
+
+            <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:layout_marginTop="40dp"
-                android:text="Save Routine"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                app:cornerRadius="32dp"
-                android:backgroundTint="@color/black"
-                android:textColor="@color/white" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
 
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupCategory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleLine="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFeeding"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Feeding"
+                        android:textColor="@color/chip_selectable_text"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/chip_selectable_bg"
+                        app:chipIcon="@drawable/ic_bowl"
+                        app:chipIconTint="@color/chip_selectable_text"
+                        app:chipStrokeColor="@color/chip_selectable_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipExercise"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Exercise"
+                        android:textColor="@color/chip_selectable_text"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/chip_selectable_bg"
+                        app:chipIcon="@drawable/ic_walk"
+                        app:chipIconTint="@color/chip_selectable_text"
+                        app:chipStrokeColor="@color/chip_selectable_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGrooming"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Grooming"
+                        android:textColor="@color/chip_selectable_text"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/chip_selectable_bg"
+                        app:chipIcon="@drawable/ic_groom"
+                        app:chipIconTint="@color/chip_selectable_text"
+                        app:chipStrokeColor="@color/chip_selectable_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMedication"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Medication"
+                        android:textColor="@color/chip_selectable_text"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/chip_selectable_bg"
+                        app:chipIcon="@drawable/ic_meds"
+                        app:chipIconTint="@color/chip_selectable_text"
+                        app:chipStrokeColor="@color/chip_selectable_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipHealthcare"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Healthcare"
+                        android:textColor="@color/chip_selectable_text"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/chip_selectable_bg"
+                        app:chipIcon="@drawable/ic_status_check"
+                        app:chipIconTint="@color/chip_selectable_text"
+                        app:chipStrokeColor="@color/chip_selectable_stroke"
+                        app:chipStrokeWidth="1dp" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="SCHEDULE"
+                android:textColor="@color/app_text_secondary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupRepeat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:singleLine="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipDaily"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:checked="true"
+                    android:minWidth="120dp"
+                    android:text="Daily"
+                    android:textAlignment="center"
+                    android:textColor="@color/chip_selectable_text"
+                    app:checkedIconVisible="false"
+                    app:chipBackgroundColor="@color/chip_selectable_bg"
+                    app:chipStrokeColor="@color/chip_selectable_stroke"
+                    app:chipStrokeWidth="1dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipWeekly"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:minWidth="120dp"
+                    android:text="Weekly"
+                    android:textAlignment="center"
+                    android:textColor="@color/chip_selectable_text"
+                    app:checkedIconVisible="false"
+                    app:chipBackgroundColor="@color/chip_selectable_bg"
+                    app:chipStrokeColor="@color/chip_selectable_stroke"
+                    app:chipStrokeWidth="1dp" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <LinearLayout
+                android:id="@+id/layoutWeeklyDays"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/dayMonday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_day_selected"
+                    android:gravity="center"
+                    android:text="M"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dayTuesday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_day_unselected"
+                    android:gravity="center"
+                    android:text="T"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dayWednesday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_day_unselected"
+                    android:gravity="center"
+                    android:text="W"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dayThursday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_day_unselected"
+                    android:gravity="center"
+                    android:text="T"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dayFriday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_day_unselected"
+                    android:gravity="center"
+                    android:text="F"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/daySaturday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_day_unselected"
+                    android:gravity="center"
+                    android:text="S"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/daySunday"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_day_unselected"
+                    android:gravity="center"
+                    android:text="S"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutTime"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:boxBackgroundColor="@color/app_input_bg"
+                app:boxCornerRadiusBottomEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxStrokeColor="@color/app_divider"
+                app:endIconDrawable="@android:drawable/ic_menu_recent_history"
+                app:endIconMode="custom"
+                app:endIconTint="@color/app_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputTaskTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:editable="false"
+                    android:focusable="false"
+                    android:hint="Select time"
+                    android:textColor="@color/app_text_primary"
+                    android:textColorHint="@color/app_text_secondary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutEndsOn"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:boxBackgroundColor="@color/app_input_bg"
+                app:boxCornerRadiusBottomEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxStrokeColor="@color/app_divider"
+                app:endIconDrawable="@android:drawable/ic_menu_my_calendar"
+                app:endIconMode="custom"
+                app:endIconTint="@color/app_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputEndsOn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:editable="false"
+                    android:focusable="false"
+                    android:hint="Ends on (optional)"
+                    android:textColor="@color/app_text_primary"
+                    android:textColorHint="@color/app_text_secondary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="EXTRA"
+                android:textColor="@color/app_text_secondary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutExpense"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:boxBackgroundColor="@color/app_input_bg"
+                app:boxCornerRadiusBottomEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxStrokeColor="@color/app_divider">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editTextExpense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Estimated expense"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/app_text_primary"
+                    android:textColorHint="@color/app_text_secondary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:text="Delegate this task to others"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp" />
+
+                <CheckBox
+                    android:id="@+id/checkDelegate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:buttonTint="@color/black"
+                    tools:checked="false" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:text="Remind me for this task"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="12sp" />
+
+                <CheckBox
+                    android:id="@+id/checkReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:buttonTint="@color/black"
+                    android:checked="true" />
+            </RelativeLayout>
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/app_bg"
+        android:padding="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonSaveTask"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:backgroundTint="@color/black"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="Save task"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:cornerRadius="8dp" />
+    </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

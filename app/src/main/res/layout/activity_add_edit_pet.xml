@@ -85,43 +85,37 @@
                         android:src="@drawable/ic_camera_white" />
                 </FrameLayout>
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
+                    android:scrollbars="none">
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@color/app_input_bg"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Small"
-                        app:strokeColor="@color/app_divider"
-                        app:strokeWidth="1dp" />
+                    <LinearLayout
+                        android:id="@+id/layoutPetPhotos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@color/app_input_bg"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Small"
-                        app:strokeColor="@color/app_divider"
-                        app:strokeWidth="1dp" />
+                        <FrameLayout
+                            android:id="@+id/buttonAddMorePhotos"
+                            android:layout_width="52dp"
+                            android:layout_height="52dp"
+                            android:background="@drawable/bg_thumbnail_dashed"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground">
 
-                    <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:background="@drawable/bg_thumbnail_dashed">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_gravity="center"
-                            android:src="@android:drawable/ic_input_add"
-                            app:tint="@color/app_text_secondary" />
-                    </FrameLayout>
-                </LinearLayout>
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="center"
+                                android:src="@android:drawable/ic_input_add"
+                                app:tint="@color/app_text_secondary" />
+                        </FrameLayout>
+                    </LinearLayout>
+                </HorizontalScrollView>
             </LinearLayout>
 
             <!-- Basic Info Section -->

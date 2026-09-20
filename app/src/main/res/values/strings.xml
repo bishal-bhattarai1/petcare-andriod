@@ -61,4 +61,17 @@
 
     <!-- Generic Auth -->
     <string name="auth_logout">Logout</string>
+
+    <!-- Profile Settings -->
+    <string name="settings_title_personal">Personal Information</string>
+    <string name="settings_title_password">Change Password</string>
+    <string name="settings_label_phone">Delegate Contact (Phone)</string>
+    <string name="settings_hint_phone">Phone number</string>
+    <string name="settings_button_save">Save Changes</string>
+    <string name="settings_button_update_pass">Update Password</string>
+    <string name="settings_label_new_pass">New Password</string>
+    <string name="settings_label_confirm_pass">Confirm New Password</string>
+    <string name="settings_hint_new_pass">Enter new password</string>
+    <string name="settings_hint_confirm_pass">Repeat new password</string>
+    <string name="settings_password_desc">Keep your account secure by using a strong password.</string>
 </resources>
