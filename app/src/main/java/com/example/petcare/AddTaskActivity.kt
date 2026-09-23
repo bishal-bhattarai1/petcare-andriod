@@ -4,20 +4,13 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -31,6 +24,7 @@ class AddTaskActivity : AppCompatActivity() {
     private lateinit var weeklyDaysLayout: LinearLayout
     private val selectedWeekDays = linkedSetOf("Mon")
     private var selectedPet: PetOption? = null
+    private var selectedLocationId: Long = -1L
     private var initialPetId: Long = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,8 +34,7 @@ class AddTaskActivity : AppCompatActivity() {
         database = AuthDatabaseHelper(this)
         initialPetId = intent.getLongExtra(EXTRA_SELECTED_PET_ID, -1L)
 
-        // Ensure status bar icons are dark on light background
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
@@ -57,12 +50,9 @@ class AddTaskActivity : AppCompatActivity() {
         val saveButton = findViewById<Button>(R.id.buttonSaveTask)
         val categoryGroup = findViewById<ChipGroup>(R.id.chipGroupCategory)
         val repeatGroup = findViewById<ChipGroup>(R.id.chipGroupRepeat)
-        val petOptions = setupPetPicker()
-        if (petOptions.isEmpty()) {
-            saveButton.isEnabled = false
-            saveButton.alpha = 0.55f
-        }
-
+        
+        setupPetPicker()
+        setupLocationPicker()
         setupScheduleControls()
 
         saveButton.setOnClickListener {
@@ -83,7 +73,9 @@ class AddTaskActivity : AppCompatActivity() {
             val weekDays = if (repeatType == "Weekly") selectedWeekDays.joinToString(",") else ""
             val scheduledTime = findViewById<TextInputEditText>(R.id.inputTaskTime).text?.toString().orEmpty()
             val reminderEnabled = findViewById<android.widget.CheckBox>(R.id.checkReminder).isChecked
-
+            val supplies = findViewById<TextInputEditText>(R.id.inputSupplies).text?.toString().orEmpty()
+            val notes = findViewById<TextInputEditText>(R.id.inputTaskNotes).text?.toString().orEmpty()
+            
             val taskId = database.saveTask(
                 petId = pet.id,
                 description = desc,
@@ -94,12 +86,15 @@ class AddTaskActivity : AppCompatActivity() {
                 scheduledTime = scheduledTime,
                 endsOn = findViewById<TextInputEditText>(R.id.inputEndsOn).text?.toString().orEmpty(),
                 delegate = findViewById<android.widget.CheckBox>(R.id.checkDelegate).isChecked,
-                reminder = reminderEnabled
+                reminder = reminderEnabled,
+                supplies = supplies,
+                notes = notes,
+                locationId = selectedLocationId
             )
 
             if (taskId != -1L) {
                 if (reminderEnabled && scheduledTime.isNotBlank()) {
-                    scheduleReminder(taskId, scheduledTime)
+                    checkNotificationPermissionAndSchedule(taskId, scheduledTime)
                 }
                 Toast.makeText(this, "Care routine saved!", Toast.LENGTH_SHORT).show()
                 finish()
@@ -109,9 +104,24 @@ class AddTaskActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkNotificationPermissionAndSchedule(taskId: Long, time: String) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            if (androidx.core.content.ContextCompat.checkSelfPermission(this, permission) != 
+                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                scheduleReminder(taskId, time)
+            } else {
+                scheduleReminder(taskId, time)
+            }
+        } else {
+            scheduleReminder(taskId, time)
+        }
+    }
+
     private fun scheduleReminder(taskId: Long, time: String) {
         try {
-            val parts = time.split(" ") // "12:00 PM"
+            val calendar = Calendar.getInstance()
+            val parts = time.split(" ") 
             val timeParts = parts[0].split(":")
             var hour = timeParts[0].toInt()
             val minute = timeParts[1].toInt()
@@ -140,27 +150,17 @@ class AddTaskActivity : AppCompatActivity() {
 
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        android.app.AlarmManager.RTC_WAKEUP,
-                        reminderTime.timeInMillis,
-                        pendingIntent
-                    )
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime.timeInMillis, pendingIntent)
                 } else {
                     alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, reminderTime.timeInMillis, pendingIntent)
                 }
             } else {
-                alarmManager.setExactAndAllowWhileIdle(
-                    android.app.AlarmManager.RTC_WAKEUP,
-                    reminderTime.timeInMillis,
-                    pendingIntent
-                )
+                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime.timeInMillis, pendingIntent)
             }
-        } catch (e: Exception) {
-            // Log error
-        }
+        } catch (e: Exception) {}
     }
 
-    private fun setupPetPicker(): List<PetOption> {
+    private fun setupPetPicker() {
         val pets = database.getPetOptions()
         val subtitle = findViewById<TextView>(R.id.textPetSubtitle)
         val input = findViewById<AutoCompleteTextView>(R.id.inputPetName)
@@ -169,14 +169,10 @@ class AddTaskActivity : AppCompatActivity() {
             input.setText("No pets added", false)
             input.isEnabled = false
             subtitle.text = "Add a pet first"
-            return pets
+            return
         }
 
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_dropdown_item_1line,
-            pets.map { it.name }
-        )
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, pets.map { it.name })
         input.setAdapter(adapter)
         input.threshold = 0
 
@@ -188,14 +184,50 @@ class AddTaskActivity : AppCompatActivity() {
 
         selectPet(pets.firstOrNull { it.id == initialPetId } ?: pets.first())
         input.setOnClickListener { input.showDropDown() }
-        input.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) input.showDropDown()
-        }
-        input.setOnItemClickListener { _, _, position, _ ->
-            selectPet(pets[position])
+        input.setOnItemClickListener { _, _, position, _ -> selectPet(pets[position]) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setupLocationPicker()
+    }
+
+    private fun setupLocationPicker() {
+        val locations = database.getLocations()
+        val input = findViewById<AutoCompleteTextView>(R.id.inputLinkLocation)
+        
+        if (locations.isEmpty()) {
+            input.setText("None / No saved locations", false)
+            input.setAdapter(null)
+            input.setOnClickListener {
+                Toast.makeText(this, "No saved locations yet. Save locations in the Locations screen!", Toast.LENGTH_SHORT).show()
+            }
+            selectedLocationId = -1L
+            return
         }
 
-        return pets
+        val names = locations.map { if (it.category.isNotBlank()) "${it.name} (${it.category})" else it.name }.toMutableList()
+        names.add(0, "None / No Location")
+        
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, names)
+        input.setAdapter(adapter)
+        
+        if (selectedLocationId == -1L) {
+            input.setText(names[0], false)
+        } else {
+            val idx = locations.indexOfFirst { it.id == selectedLocationId }
+            if (idx != -1) {
+                input.setText(names[idx + 1], false)
+            } else {
+                input.setText(names[0], false)
+                selectedLocationId = -1L
+            }
+        }
+
+        input.setOnClickListener { input.showDropDown() }
+        input.setOnItemClickListener { _, _, position, _ ->
+            selectedLocationId = if (position == 0) -1L else locations[position - 1].id
+        }
     }
 
     private fun setupScheduleControls() {
@@ -204,8 +236,7 @@ class AddTaskActivity : AppCompatActivity() {
 
         val repeatGroup = findViewById<ChipGroup>(R.id.chipGroupRepeat)
         repeatGroup.setOnCheckedStateChangeListener { _, checkedIds ->
-            weeklyDaysLayout.visibility =
-                if (checkedIds.contains(R.id.chipWeekly)) View.VISIBLE else View.GONE
+            weeklyDaysLayout.visibility = if (checkedIds.contains(R.id.chipWeekly)) View.VISIBLE else View.GONE
         }
 
         setupTimePicker()
@@ -238,39 +269,22 @@ class AddTaskActivity : AppCompatActivity() {
 
     private fun showTimePicker(input: TextInputEditText) {
         val calendar = Calendar.getInstance()
-        TimePickerDialog(
-            this,
-            { _, hourOfDay, minute ->
-                val suffix = if (hourOfDay >= 12) "PM" else "AM"
-                val hour = when {
-                    hourOfDay == 0 -> 12
-                    hourOfDay > 12 -> hourOfDay - 12
-                    else -> hourOfDay
-                }
-                input.setText(String.format(Locale.getDefault(), "%02d:%02d %s", hour, minute, suffix))
-            },
-            calendar.get(Calendar.HOUR_OF_DAY),
-            calendar.get(Calendar.MINUTE),
-            false
-        ).show()
+        TimePickerDialog(this, { _, h, m ->
+            val amPm = if (h >= 12) "PM" else "AM"
+            val hour = if (h == 0 || h == 12) 12 else h % 12
+            input.setText(String.format(Locale.getDefault(), "%02d:%02d %s", hour, m, amPm))
+        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), false).show()
     }
 
     private fun showEndsOnPicker(input: TextInputEditText) {
         val calendar = Calendar.getInstance()
-        DatePickerDialog(
-            this,
-            { _, year, month, dayOfMonth ->
-                input.setText(String.format(Locale.getDefault(), "%02d/%02d/%d", dayOfMonth, month + 1, year))
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        DatePickerDialog(this, { _, y, m, d ->
+            input.setText(String.format(Locale.getDefault(), "%02d/%02d/%d", d, m + 1, y))
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
     }
 
     private fun setupWeekDay(viewId: Int, dayCode: String) {
-        val dayView = findViewById<TextView>(viewId)
-        dayView.setOnClickListener {
+        findViewById<TextView>(viewId).setOnClickListener {
             if (selectedWeekDays.contains(dayCode) && selectedWeekDays.size > 1) {
                 selectedWeekDays.remove(dayCode)
             } else {
@@ -293,18 +307,18 @@ class AddTaskActivity : AppCompatActivity() {
     private fun setWeekDaySelected(viewId: Int, selected: Boolean) {
         val view = findViewById<TextView>(viewId)
         view.setBackgroundResource(if (selected) R.drawable.bg_day_selected else R.drawable.bg_day_unselected)
-        view.setTextColor(
-            ContextCompat.getColor(
-                this,
-                if (selected) R.color.white else R.color.app_text_secondary
-            )
-        )
+        view.setTextColor(ContextCompat.getColor(this, if (selected) R.color.white else R.color.app_text_secondary))
     }
 
     private fun selectedChipText(group: ChipGroup, fallback: String): String {
         val chipId = group.checkedChipId
         if (chipId == View.NO_ID) return fallback
-        return findViewById<Chip>(chipId).text?.toString().orEmpty().ifBlank { fallback }
+        return findViewById<Chip>(chipId).text?.toString() ?: fallback
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 
     companion object {

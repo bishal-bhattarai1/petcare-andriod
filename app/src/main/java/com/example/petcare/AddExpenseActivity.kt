@@ -32,7 +32,7 @@ class AddExpenseActivity : AppCompatActivity() {
         database = AuthDatabaseHelper(this)
         initialPetId = intent.getLongExtra(EXTRA_SELECTED_PET_ID, -1L)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -159,6 +159,11 @@ class AddExpenseActivity : AppCompatActivity() {
         val chipId = group.checkedChipId
         if (chipId == View.NO_ID) return fallback
         return findViewById<Chip>(chipId).text?.toString().orEmpty().ifBlank { fallback }
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 
     companion object {

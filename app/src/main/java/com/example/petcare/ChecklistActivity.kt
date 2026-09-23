@@ -1,8 +1,10 @@
 package com.example.petcare
 
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -25,6 +27,7 @@ class ChecklistActivity : AppCompatActivity() {
     private lateinit var database: AuthDatabaseHelper
     private var petId: Long = -1L
     private var petName: String = "Pet"
+    private var searchQuery: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +37,7 @@ class ChecklistActivity : AppCompatActivity() {
         petId = intent.getLongExtra(EXTRA_PET_ID, -1L)
         petName = intent.getStringExtra(EXTRA_PET_NAME).orEmpty().ifBlank { "Pet" }
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -50,6 +53,15 @@ class ChecklistActivity : AppCompatActivity() {
                     .putExtra(AddTaskActivity.EXTRA_SELECTED_PET_ID, petId)
             )
         }
+
+        findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editChecklistSearch).addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                searchQuery = s?.toString()?.trim().orEmpty()
+                renderChecklist()
+            }
+        })
     }
 
     override fun onResume() {
@@ -58,12 +70,19 @@ class ChecklistActivity : AppCompatActivity() {
     }
 
     private fun renderChecklist() {
-        val tasks = database.getCareTasks(if (petId > 0) petId else null)
+        var tasks = database.getCareTasks(if (petId > 0) petId else null)
+        
+        if (searchQuery.isNotBlank()) {
+            tasks = tasks.filter { it.description.contains(searchQuery, ignoreCase = true) }
+        }
+
         val layout = findViewById<LinearLayout>(R.id.layoutChecklistItems)
         layout.removeAllViews()
         tasks.forEach { task -> layout.addView(createTaskRow(task)) }
-        findViewById<TextView>(R.id.textEmptyChecklist).visibility =
-            if (tasks.isEmpty()) View.VISIBLE else View.GONE
+        
+        val emptyText = findViewById<TextView>(R.id.textEmptyChecklist)
+        emptyText.text = if (searchQuery.isBlank()) "No checklist items yet." else "No routines match your search."
+        emptyText.visibility = if (tasks.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun createTaskRow(task: CareTask): View {
@@ -194,12 +213,68 @@ class ChecklistActivity : AppCompatActivity() {
                 setOnClickListener {
                     val saved = database.updateTaskCompletion(task.id, true)
                     if (saved) {
+                        val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+                        vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                        
                         Toast.makeText(this@ChecklistActivity, "Routine completed! 🎉", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(this@ChecklistActivity, "Could not complete routine", Toast.LENGTH_SHORT).show()
                     }
                     renderChecklist()
                 }
+            })
+        }
+
+        if (!task.isCompleted) {
+            actions.addView(MaterialButton(this).apply {
+                text = "Edit"
+                setTextColor(ContextCompat.getColor(this@ChecklistActivity, R.color.black))
+                backgroundTintList = ContextCompat.getColorStateList(this@ChecklistActivity, android.R.color.transparent)
+                strokeColor = ContextCompat.getColorStateList(this@ChecklistActivity, R.color.app_divider)
+                strokeWidth = 1.dp()
+                cornerRadius = 8.dp()
+                minHeight = 0
+                insetTop = 0
+                insetBottom = 0
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    44.dp()
+                ).apply { marginStart = 8.dp() }
+                setOnClickListener { showEditDialog(task) }
+            })
+
+            actions.addView(MaterialButton(this).apply {
+                text = "Delete"
+                setTextColor(ContextCompat.getColor(this@ChecklistActivity, R.color.app_accent_red))
+                backgroundTintList = ContextCompat.getColorStateList(this@ChecklistActivity, android.R.color.transparent)
+                strokeColor = ContextCompat.getColorStateList(this@ChecklistActivity, R.color.app_divider)
+                strokeWidth = 1.dp()
+                cornerRadius = 8.dp()
+                minHeight = 0
+                insetTop = 0
+                insetBottom = 0
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    44.dp()
+                ).apply { marginStart = 8.dp() }
+                setOnClickListener { showDeleteTaskConfirmation(task.id) }
+            })
+
+            actions.addView(MaterialButton(this).apply {
+                text = "Sync Calendar"
+                setTextColor(ContextCompat.getColor(this@ChecklistActivity, R.color.black))
+                backgroundTintList = ContextCompat.getColorStateList(this@ChecklistActivity, android.R.color.transparent)
+                strokeColor = ContextCompat.getColorStateList(this@ChecklistActivity, R.color.app_divider)
+                strokeWidth = 1.dp()
+                cornerRadius = 8.dp()
+                minHeight = 0
+                insetTop = 0
+                insetBottom = 0
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    44.dp()
+                ).apply { marginStart = 8.dp() }
+                setOnClickListener { exportToSystemCalendar(task) }
             })
         }
         container.addView(actions)
@@ -276,7 +351,126 @@ class ChecklistActivity : AppCompatActivity() {
         return "Available at ${task.scheduledTime}"
     }
 
+    private fun showDeleteTaskConfirmation(taskId: Long) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Task")
+            .setMessage("Are you sure you want to remove this care routine?")
+            .setPositiveButton("Delete") { _, _ ->
+                if (database.deleteTask(taskId)) {
+                    Toast.makeText(this, "Task removed", Toast.LENGTH_SHORT).show()
+                    renderChecklist()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showEditDialog(task: CareTask) {
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24.dp(), 16.dp(), 24.dp(), 0)
+        }
+        
+        val descriptionInput = EditText(this).apply {
+            hint = "Task title"
+            setText(task.description)
+            setSingleLine(true)
+        }
+        
+        val timeInput = EditText(this).apply {
+            hint = "Time"
+            setText(task.scheduledTime)
+            isFocusable = false
+            setOnClickListener { showTimePicker(this) }
+        }
+
+        val suppliesInput = EditText(this).apply {
+            hint = "Required supplies"
+            setText(task.requiredSupplies)
+        }
+
+        val notesInput = EditText(this).apply {
+            hint = "Special instructions"
+            setText(task.taskNotes)
+            minLines = 2
+        }
+
+        form.addView(TextView(this).apply { text = "Title & Time"; textSize = 12f; setPadding(0,0,0,4.dp()) })
+        form.addView(descriptionInput)
+        form.addView(timeInput)
+        form.addView(TextView(this).apply { text = "Resources & Notes"; textSize = 12f; setPadding(0,16.dp(),0,4.dp()) })
+        form.addView(suppliesInput)
+        form.addView(notesInput)
+
+        AlertDialog.Builder(this)
+            .setTitle("Edit Care Routine")
+            .setView(form)
+            .setPositiveButton("Save Changes") { _, _ ->
+                val description = descriptionInput.text.toString().trim()
+                if (description.isBlank()) {
+                    Toast.makeText(this, "Task title is required", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val saved = database.updateTaskDetails(
+                    task.id,
+                    description,
+                    timeInput.text.toString().trim(),
+                    suppliesInput.text.toString().trim(),
+                    notesInput.text.toString().trim()
+                )
+                Toast.makeText(
+                    this,
+                    if (saved) "Changes saved" else "Could not save task",
+                    Toast.LENGTH_SHORT
+                ).show()
+                renderChecklist()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showTimePicker(input: EditText) {
+        val calendar = Calendar.getInstance()
+        TimePickerDialog(
+            this,
+            { _, hourOfDay, minute ->
+                val suffix = if (hourOfDay >= 12) "PM" else "AM"
+                val hour = when {
+                    hourOfDay == 0 -> 12
+                    hourOfDay > 12 -> hourOfDay - 12
+                    else -> hourOfDay
+                }
+                input.setText(String.format(Locale.getDefault(), "%02d:%02d %s", hour, minute, suffix))
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            false
+        ).show()
+    }
+
+    private fun exportToSystemCalendar(task: CareTask) {
+        val intent = android.content.Intent(android.content.Intent.ACTION_INSERT)
+            .setData(android.provider.CalendarContract.Events.CONTENT_URI)
+            .putExtra(android.provider.CalendarContract.Events.TITLE, "PetCare: ${task.description} (${task.petName})")
+            .putExtra(android.provider.CalendarContract.Events.DESCRIPTION, "Routine care task for ${task.petName}.\nNotes: ${task.taskNotes}\nSupplies: ${task.requiredSupplies}")
+            .putExtra(android.provider.CalendarContract.Events.EVENT_LOCATION, task.locationName ?: "")
+            .putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, System.currentTimeMillis() + 60 * 60 * 1000) // Default 1 hour from now
+            .putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, System.currentTimeMillis() + 120 * 60 * 1000)
+        
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Calendar app not found", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun Int.dp(): Int = (this * resources.displayMetrics.density).roundToInt()
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
 
     companion object {
         const val EXTRA_PET_ID = "extra_pet_id"

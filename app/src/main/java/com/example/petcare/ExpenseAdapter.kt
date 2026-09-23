@@ -40,6 +40,8 @@ class ExpenseAdapter(private val expenses: List<ExpenseTransaction>) :
     }
 
     override fun getItemCount() = expenses.size
+
+    fun getExpenseAt(position: Int): ExpenseTransaction = expenses[position]
 }
 
 data class ExpenseCategoryStyle(

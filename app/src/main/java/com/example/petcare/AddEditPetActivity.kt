@@ -57,7 +57,7 @@ class AddEditPetActivity : AppCompatActivity() {
         setContentView(R.layout.activity_add_edit_pet)
         database = AuthDatabaseHelper(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
@@ -239,6 +239,11 @@ class AddEditPetActivity : AppCompatActivity() {
 
             if (petId != -1L) {
                 database.savePetPhotos(petId, selectedPhotos)
+                
+                if (switchReminder.isChecked && inputVaccineDate.text.toString().isNotBlank()) {
+                    scheduleVaccinationReminder(petId, name, inputVaccineDate.text.toString())
+                }
+                
                 Toast.makeText(this, "Pet profile saved successfully!", Toast.LENGTH_SHORT).show()
                 finish()
             } else {
@@ -277,5 +282,56 @@ class AddEditPetActivity : AppCompatActivity() {
         
         progressCompletion.setProgress(percent, true)
         textCompletion.text = getString(R.string.add_pet_completion_text, percent)
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
+
+    private fun scheduleVaccinationReminder(petId: Long, petName: String, date: String) {
+        try {
+            val parts = date.split("/") // DD/MM/YYYY
+            val day = parts[0].toInt()
+            val month = parts[1].toInt() - 1
+            val year = parts[2].toInt()
+
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, month)
+                set(Calendar.DAY_OF_MONTH, day)
+                set(Calendar.HOUR_OF_DAY, 9)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+            }
+
+            if (calendar.before(Calendar.getInstance())) return
+
+            val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+            val intent = android.content.Intent(this, ReminderReceiver::class.java).apply {
+                putExtra("PET_ID", petId)
+                putExtra("PET_NAME", petName)
+                putExtra("TYPE", "VACCINE")
+            }
+            
+            // Unique ID for pet vaccination (using petId with offset to avoid conflict with tasks)
+            val requestCode = petId.toInt() + 10000 
+            val pendingIntent = android.app.PendingIntent.getBroadcast(
+                this, requestCode, intent, 
+                android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+                } else {
+                    alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            }
+        } catch (e: Exception) {
+            // Parsing error
+        }
     }
 }

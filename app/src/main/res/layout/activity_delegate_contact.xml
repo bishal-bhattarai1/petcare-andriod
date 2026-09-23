@@ -16,7 +16,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIcon="@drawable/ic_back_arrow"
             app:title="Delegate Care Tasks"
             app:titleTextColor="@color/app_text_primary" />
     </com.google.android.material.appbar.AppBarLayout>

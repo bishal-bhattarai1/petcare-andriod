@@ -1,10 +1,13 @@
 package com.example.petcare
 
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -36,7 +39,9 @@ class ExpensesActivity : AppCompatActivity() {
         database = AuthDatabaseHelper(this)
         sessionManager = SessionManager(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
+        updateBottomNavigationUI()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_expenses)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
@@ -219,4 +224,39 @@ class ExpensesActivity : AppCompatActivity() {
 
     private fun Int.dp(): Int = (this * resources.displayMetrics.density).roundToInt()
 
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
+
+    private fun updateBottomNavigationUI() {
+        val navItems = listOf(
+            R.id.navHome to false,
+            R.id.navTasks to false,
+            R.id.navExpenses to true,
+            R.id.navProfile to false
+        )
+
+        navItems.forEach { (viewId, isSelected) ->
+            val item = findViewById<LinearLayout>(viewId)
+            val selected = isSelected
+            item.setBackgroundResource(if (selected) R.drawable.bg_bottom_nav_selected else 0)
+            (item.layoutParams as? LinearLayout.LayoutParams)?.let { params ->
+                val margin = if (selected) 4.dp() else 0
+                params.marginStart = margin
+                params.marginEnd = margin
+                item.layoutParams = params
+            }
+
+            val color = ContextCompat.getColor(
+                this,
+                if (selected) R.color.black else R.color.app_text_secondary
+            )
+            val image = item.getChildAt(0) as? ImageView
+            val label = item.getChildAt(1) as? TextView
+            image?.imageTintList = ColorStateList.valueOf(color)
+            label?.setTextColor(color)
+            label?.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+        }
+    }
 }

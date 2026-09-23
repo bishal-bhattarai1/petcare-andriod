@@ -13,6 +13,7 @@
     <color name="app_divider">#EEEEEE</color>
 
     <color name="app_accent_red">#FF4B4B</color>
+    <color name="app_accent_blue">#2196F3</color>
     <color name="status_green">#4CAF50</color>
     <color name="indicator_grey">#E0E0E0</color>
     <color name="indicator_dark">#333333</color>

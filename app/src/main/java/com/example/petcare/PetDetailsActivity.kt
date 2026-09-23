@@ -2,6 +2,7 @@ package com.example.petcare
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import android.view.View
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -22,7 +23,7 @@ class PetDetailsActivity : AppCompatActivity() {
 
         database = AuthDatabaseHelper(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -50,9 +51,27 @@ class PetDetailsActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
             }
+
+            findViewById<View>(R.id.buttonDeletePet).setOnClickListener {
+                showDeletePetConfirmation(petId)
+            }
         } else {
             finish()
         }
+    }
+
+    private fun showDeletePetConfirmation(petId: Long) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Delete Pet")
+            .setMessage("Are you sure you want to remove this pet and all associated data? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                if (database.deletePet(petId)) {
+                    Toast.makeText(this, "Pet removed successfully", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun loadPetDetails(petId: Long) {
@@ -129,6 +148,11 @@ class PetDetailsActivity : AppCompatActivity() {
                 strokeWidth = 1.dp()
                 strokeColor = androidx.core.content.ContextCompat.getColor(this@PetDetailsActivity, R.color.app_divider)
                 setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(this@PetDetailsActivity, R.color.card_bg))
+                
+                setOnLongClickListener {
+                    showDeleteHistoryConfirmation(record)
+                    true
+                }
             }
             
             val container = android.widget.LinearLayout(this).apply {
@@ -157,6 +181,20 @@ class PetDetailsActivity : AppCompatActivity() {
             card.addView(container)
             layout.addView(card)
         }
+    }
+
+    private fun showDeleteHistoryConfirmation(record: HealthcareRecord) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Delete Record")
+            .setMessage("Are you sure you want to remove this medical record (${record.type})?")
+            .setPositiveButton("Delete") { _, _ ->
+                if (database.deleteHealthcareRecord(record.id)) {
+                    Toast.makeText(this, "Record removed", Toast.LENGTH_SHORT).show()
+                    loadHealthcareHistory(record.petId)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showAddHistoryDialog(petId: Long) {
@@ -191,10 +229,11 @@ class PetDetailsActivity : AppCompatActivity() {
                 
                 if (type.isNotBlank() && date.isNotBlank()) {
                     if (database.saveHealthcareRecord(petId, type, date, notes)) {
+                        val petName = findViewById<TextView>(R.id.textPetNameHeader).text.toString()
                         NotificationHelper(this@PetDetailsActivity).showTaskNotification(
                             System.currentTimeMillis(),
-                            "Healthcare Logged!",
-                            "$type recorded for pet."
+                            "$petName: Record Logged",
+                            "$type recorded successfully."
                         )
                         loadHealthcareHistory(petId)
                     }
@@ -202,6 +241,11 @@ class PetDetailsActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 
     private fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()

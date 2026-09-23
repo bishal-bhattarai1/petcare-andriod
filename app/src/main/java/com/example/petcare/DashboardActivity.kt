@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -37,6 +38,12 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import java.text.DecimalFormat
 import java.util.Calendar
 import kotlin.math.roundToInt
+
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.RectF
 
 class DashboardActivity : AppCompatActivity() {
     companion object {
@@ -67,6 +74,12 @@ class DashboardActivity : AppCompatActivity() {
 
     private var tasksSearchQuery: String = ""
     private var tasksSelectedFilterId: Int = R.id.chipFilterAll
+    private var taskAdapter: TaskAdapter? = null
+
+    private var expensesSearchQuery: String = ""
+
+    private lateinit var sensorManager: android.hardware.SensorManager
+    private var shakeDetector: ShakeDetector? = null
 
     private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -87,7 +100,12 @@ class DashboardActivity : AppCompatActivity() {
         hostFab = findViewById(R.id.fabAdd)
         tabPages[MainTab.HOME] = findViewById(R.id.dashboardScroll)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        sensorManager = getSystemService(android.content.Context.SENSOR_SERVICE) as android.hardware.SensorManager
+        shakeDetector = ShakeDetector {
+            showResetConfirmation()
+        }
+
+        updateStatusBarIcons()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_dashboard)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -108,16 +126,33 @@ class DashboardActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        val accelerometer = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+        sensorManager.registerListener(shakeDetector, accelerometer, android.hardware.SensorManager.SENSOR_DELAY_UI)
         refreshCurrentTab()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(shakeDetector)
+    }
+
+    private fun showResetConfirmation() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Reset Checklist")
+            .setMessage("Shake detected! Would you like to reset all of today's completed routines for a fresh start?")
+            .setPositiveButton("Reset Now") { _, _ ->
+                if (database.resetDailyTasks()) {
+                    refreshCurrentTab()
+                    Toast.makeText(this, "Daily routines reset! ☀️", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Not now", null)
+            .show()
     }
 
     private fun setupHomePage() {
         petRecyclerView = findViewById(R.id.recyclerViewPets)
         petRecyclerView.layoutManager = LinearLayoutManager(this)
-
-        findViewById<View>(R.id.cardAddPet).setOnClickListener {
-            startActivity(Intent(this, AddEditPetActivity::class.java))
-        }
 
         findViewById<View>(R.id.buttonProfile).setOnClickListener {
             showTab(MainTab.PROFILE)
@@ -145,6 +180,10 @@ class DashboardActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnQuickDelegate).setOnClickListener {
             startActivity(Intent(this, DelegateContactActivity::class.java))
+        }
+
+        findViewById<View>(R.id.btnQuickLocations).setOnClickListener {
+            startActivity(Intent(this, LocationsActivity::class.java))
         }
     }
 
@@ -230,7 +269,7 @@ class DashboardActivity : AppCompatActivity() {
             val selected = tab == selectedTab
             item.setBackgroundResource(if (selected) R.drawable.bg_bottom_nav_selected else 0)
             (item.layoutParams as? LinearLayout.LayoutParams)?.let { params ->
-                val margin = if (selected) 4.dp() else 0
+                val margin = if (selected) (4 * resources.displayMetrics.density).toInt() else 0
                 params.marginStart = margin
                 params.marginEnd = margin
                 item.layoutParams = params
@@ -289,6 +328,22 @@ class DashboardActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.textGreetingLabel).text = greeting
 
+        // Production Level: Dynamic Pet Care Tip of the Day
+        val tips = listOf(
+            "Regular grooming helps prevent skin issues and keeps your pet's coat healthy.",
+            "Walking your dog daily improves their mental health and physical fitness.",
+            "Interactive toys can help reduce anxiety and boredom in your pets.",
+            "Ensure your pet has a comfortable, quiet place to sleep and rest.",
+            "Fresh water should be available 24/7. Clean the bowl daily.",
+            "Check for ticks and fleas after every outdoor walk.",
+            "Small treats are great, but monitor your pet's calorie intake.",
+            "Positive reinforcement is the best way to train Max or Luna!"
+        )
+        try {
+            val randomTip = tips.random()
+            findViewById<TextView>(R.id.textCareTip).text = "Care Tip: $randomTip"
+        } catch (_: Exception) {}
+
         // Notification visibility logic
         findViewById<View>(R.id.buttonNotifications).visibility =
             if (sessionManager.areNotificationsEnabled()) View.VISIBLE else View.GONE
@@ -324,8 +379,10 @@ class DashboardActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.textPetCount).text = "${pets.size} $petLabel"
         findViewById<TextView>(R.id.textDailySummary).text = buildDailySummary(pets.size, taskStats)
-        findViewById<TextView>(R.id.textEmptyPets).visibility =
-            if (pets.isEmpty()) View.VISIBLE else View.GONE
+        
+        val emptyPets = findViewById<TextView>(R.id.textEmptyPets)
+        emptyPets.text = "You haven't added any pets yet. Tap the button above to create Max or Luna's profile!"
+        emptyPets.visibility = if (pets.isEmpty()) View.VISIBLE else View.GONE
 
         // Update notification badge if there are remaining tasks
         val remainingTasks = taskStats.totalTasks - taskStats.completedTasks
@@ -360,11 +417,115 @@ class DashboardActivity : AppCompatActivity() {
             }
         })
 
-        val filterGroup = page.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupTaskFilters)
+        val filterGroup = page.findViewById<ChipGroup>(R.id.chipGroupTaskFilters)
         filterGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             tasksSelectedFilterId = checkedIds.firstOrNull() ?: R.id.chipFilterAll
             renderTasks(page)
         }
+
+        val rv = page.findViewById<RecyclerView>(R.id.recyclerViewTasks)
+        rv.layoutManager = LinearLayoutManager(this)
+        
+        taskAdapter = TaskAdapter(emptyList(), 
+            onComplete = { task -> /* Handled by Swipe Right */ },
+            onDelete = { task -> /* Handled by Swipe Left */ },
+            onClick = { task -> openChecklist(task) }
+        )
+        rv.adapter = taskAdapter
+
+        // Production Gesture Handling: Swipe Actions
+        val swipeHandler = object : ItemTouchHelper.SimpleCallback(0, 
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            
+            override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder) = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.absoluteAdapterPosition
+                val task = (taskAdapter?.tasks ?: return)[position]
+
+                val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+
+                if (direction == ItemTouchHelper.RIGHT) {
+                    // Mark as Completed
+                    database.updateTaskCompletion(task.id, true)
+                    Toast.makeText(this@DashboardActivity, "${task.description} done! 🎉", Toast.LENGTH_SHORT).show()
+                    renderTasks(page)
+                } else {
+                    // Production Logic: Deletion Confirmation with Slide Back
+                    MaterialAlertDialogBuilder(this@DashboardActivity)
+                        .setTitle("Delete Routine?")
+                        .setMessage("Are you sure you want to remove \"${task.description}\" from the checklist?")
+                        .setPositiveButton("Delete") { _, _ ->
+                            database.deleteTask(task.id)
+                            Toast.makeText(this@DashboardActivity, "Task removed", Toast.LENGTH_SHORT).show()
+                            renderTasks(page)
+                        }
+                        .setNegativeButton("Cancel") { dialog, _ ->
+                            taskAdapter?.notifyItemChanged(position)
+                            dialog.dismiss()
+                        }
+                        .setOnCancelListener {
+                            taskAdapter?.notifyItemChanged(position)
+                        }
+                        .show()
+                }
+            }
+
+            override fun onChildDraw(
+                c: Canvas, rv: RecyclerView, vh: RecyclerView.ViewHolder,
+                dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean
+            ) {
+                val itemView = vh.itemView
+                val itemHeight = itemView.bottom - itemView.top
+                val isCanceled = dX == 0f && !isCurrentlyActive
+
+                if (isCanceled) {
+                    super.onChildDraw(c, rv, vh, dX, dY, actionState, isCurrentlyActive)
+                    return
+                }
+
+                val background = ColorDrawable()
+                val paint = Paint()
+                
+                if (dX > 0) { // Swiping to the right (Complete - Green)
+                    background.color = Color.parseColor("#4CAF50")
+                    background.setBounds(itemView.left, itemView.top, itemView.left + dX.toInt(), itemView.bottom)
+                    background.draw(c)
+                    
+                    val icon = ContextCompat.getDrawable(this@DashboardActivity, R.drawable.ic_status_check)
+                    icon?.let {
+                        val iconMargin = (itemHeight - it.intrinsicHeight) / 2
+                        val iconTop = itemView.top + iconMargin
+                        val iconBottom = iconTop + it.intrinsicHeight
+                        val iconLeft = itemView.left + iconMargin
+                        val iconRight = iconLeft + it.intrinsicWidth
+                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                        it.setTint(Color.WHITE)
+                        it.draw(c)
+                    }
+                } else if (dX < 0) { // Swiping to the left (Delete - Red)
+                    background.color = Color.parseColor("#FF4B4B")
+                    background.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
+                    background.draw(c)
+                    
+                    val icon = ContextCompat.getDrawable(this@DashboardActivity, R.drawable.ic_trash)
+                    icon?.let {
+                        val iconMargin = (itemHeight - it.intrinsicHeight) / 2
+                        val iconTop = itemView.top + iconMargin
+                        val iconBottom = iconTop + it.intrinsicHeight
+                        val iconRight = itemView.right - iconMargin
+                        val iconLeft = iconRight - it.intrinsicWidth
+                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                        it.setTint(Color.WHITE)
+                        it.draw(c)
+                    }
+                }
+
+                super.onChildDraw(c, rv, vh, dX, dY, actionState, isCurrentlyActive)
+            }
+        }
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(rv)
 
         renderTasks(page)
     }
@@ -404,157 +565,10 @@ class DashboardActivity : AppCompatActivity() {
         page.findViewById<TextView>(R.id.textTasksOverviewRatio).text = "$percentage%"
         page.findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.progressTasksOverview).progress = percentage
 
-        val activeTasks = tasks.filter { !it.isCompleted }
-        val completedTasks = tasks.filter { it.isCompleted }
-
-        val taskLayout = page.findViewById<LinearLayout>(R.id.layoutTaskItems)
-        taskLayout.removeAllViews()
-        activeTasks.forEach { taskLayout.addView(createTaskRow(page, it)) }
+        taskAdapter?.updateTasks(tasks)
+        
         page.findViewById<TextView>(R.id.textEmptyTasks).visibility =
-            if (activeTasks.isEmpty()) View.VISIBLE else View.GONE
-
-        val completedLayout = page.findViewById<LinearLayout>(R.id.layoutCompletedTasks)
-        completedLayout.removeAllViews()
-        completedTasks.forEach { completedLayout.addView(createTaskRow(page, it)) }
-        page.findViewById<TextView>(R.id.textEmptyCompletedTasks).visibility =
-            if (completedTasks.isEmpty()) View.VISIBLE else View.GONE
-    }
-
-    private fun createTaskRow(page: View, task: CareTask): View {
-        val card = MaterialCardView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = 10.dp() }
-            radius = 14.dp().toFloat()
-            cardElevation = 0f
-            strokeWidth = 1.dp()
-            if (task.isCompleted) {
-                strokeColor = ContextCompat.getColor(this@DashboardActivity, R.color.app_divider)
-                setCardBackgroundColor(ContextCompat.getColor(this@DashboardActivity, R.color.app_input_bg))
-                alpha = 0.75f
-            } else {
-                strokeColor = ContextCompat.getColor(this@DashboardActivity, android.R.color.transparent)
-                setCardBackgroundColor(ContextCompat.getColor(this@DashboardActivity, R.color.card_bg))
-                alpha = 1.0f
-            }
-            setOnClickListener { openChecklist(task) }
-        }
-
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(16.dp(), 12.dp(), 16.dp(), 12.dp())
-        }
-
-        // 1. Production-Grade Interactive Checkbox Container
-        val checkboxLayout = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(32.dp(), 32.dp()).apply { marginEnd = 12.dp() }
-            val imageView = ImageView(this@DashboardActivity)
-            if (task.isCompleted) {
-                imageView.setImageResource(R.drawable.ic_status_check)
-            } else {
-                val outlineCircle = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setStroke(2.dp(), ContextCompat.getColor(this@DashboardActivity, R.color.app_text_secondary))
-                    setColor(android.graphics.Color.TRANSPARENT)
-                }
-                imageView.setImageDrawable(outlineCircle)
-            }
-            addView(imageView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-            
-            if (!task.isCompleted) {
-                setOnClickListener { openChecklist(task) }
-            } else {
-                setOnClickListener(null)
-                isClickable = false
-            }
-        }
-        container.addView(checkboxLayout)
-
-        // 3. Main Text and Sub-Labels Content Area
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        val textDescription = TextView(this).apply {
-            text = task.description.ifBlank { "Care task" }
-            setTextColor(ContextCompat.getColor(this@DashboardActivity, if (task.isCompleted) R.color.app_text_secondary else R.color.app_text_primary))
-            textSize = 15f
-            if (task.isCompleted) {
-                paintFlags = paintFlags or android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
-                typeface = Typeface.DEFAULT
-            } else {
-                typeface = Typeface.DEFAULT_BOLD
-            }
-        }
-        content.addView(textDescription)
-
-        // Metadata horizontal layout for badges
-        val metaLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 4.dp(), 0, 0)
-        }
-
-        // Pet name production badge pill
-        val petBadge = TextView(this).apply {
-            text = task.petName.ifBlank { "Pet" }
-            textSize = 10f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.white))
-            setPadding(6.dp(), 2.dp(), 6.dp(), 2.dp())
-            val pillBg = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 6.dp().toFloat()
-                setColor(ContextCompat.getColor(this@DashboardActivity, if (task.isCompleted) R.color.app_text_secondary else R.color.black))
-            }
-            background = pillBg
-        }
-        metaLayout.addView(petBadge)
-
-        val scheduleText = if (task.repeatType == "Weekly" && !task.isCompleted) {
-            val total = task.weekDays.split(",").filter { it.isNotBlank() }.size
-            val done = task.completedWeekDays.split(",").filter { it.isNotBlank() }.size
-            "$done/$total days done • ${task.scheduledTime.ifBlank { "Anytime" }}"
-        } else {
-            listOf(task.scheduledTime.ifBlank { "Anytime" }, task.repeatType)
-                .filter { it.isNotBlank() }
-                .joinToString(" • ")
-        }
-
-        val textSchedule = TextView(this).apply {
-            text = scheduleText
-            setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.app_text_secondary))
-            textSize = 12f
-            setPadding(8.dp(), 0, 0, 0)
-        }
-        metaLayout.addView(textSchedule)
-        content.addView(metaLayout)
-
-        container.addView(content)
-
-        // 4. State Indicator / Navigation Anchor
-        val statusText = TextView(this).apply {
-            text = if (task.isCompleted) "Finished" else "Checklist"
-            gravity = Gravity.CENTER
-            setTextColor(ContextCompat.getColor(this@DashboardActivity, 
-                if (task.isCompleted) R.color.status_green else R.color.app_text_secondary))
-            textSize = 12f
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(8.dp(), 0, 0, 0)
-        }
-        container.addView(statusText)
-
-        card.addView(container)
-        
-        if (task.isCompleted) {
-            card.setOnClickListener(null)
-            card.isClickable = false
-        }
-        
-        return card
+            if (tasks.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun openChecklist(task: CareTask) {
@@ -573,6 +587,73 @@ class DashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
         page.findViewById<View>(R.id.buttonAddExpense).setOnClickListener(openAddExpense)
+        
+        val searchEdit = page.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editExpensesSearch)
+        searchEdit.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                expensesSearchQuery = s?.toString()?.trim().orEmpty()
+                loadExpenses(page)
+            }
+        })
+
+        val rv = page.findViewById<RecyclerView>(R.id.recyclerViewExpenses)
+        rv.layoutManager = LinearLayoutManager(this)
+        
+        // Swipe to Delete for Expenses
+        val swipeHandler = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.absoluteAdapterPosition
+                val adapter = rv.adapter as? ExpenseAdapter ?: return
+                val expense = adapter.getExpenseAt(position)
+                
+                MaterialAlertDialogBuilder(this@DashboardActivity)
+                    .setTitle("Delete Transaction?")
+                    .setMessage("Remove \"${expense.description}\" permanently?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        database.deleteExpense(expense.id)
+                        loadExpenses(page)
+                        Toast.makeText(this@DashboardActivity, "Expense removed", Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton("Cancel") { d, _ ->
+                        adapter.notifyItemChanged(position)
+                        d.dismiss()
+                    }
+                    .setOnCancelListener { adapter.notifyItemChanged(position) }
+                    .show()
+            }
+
+            override fun onChildDraw(
+                c: Canvas, rv: RecyclerView, vh: RecyclerView.ViewHolder,
+                dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean
+            ) {
+                val itemView = vh.itemView
+                val itemHeight = itemView.bottom - itemView.top
+                
+                if (dX < 0) { // Swiping to the left (Delete - Red)
+                    val background = ColorDrawable(Color.parseColor("#FF4B4B"))
+                    background.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
+                    background.draw(c)
+                    
+                    val icon = ContextCompat.getDrawable(this@DashboardActivity, R.drawable.ic_trash)
+                    icon?.let {
+                        val iconMargin = (itemHeight - it.intrinsicHeight) / 2
+                        val iconTop = itemView.top + iconMargin
+                        val iconBottom = iconTop + it.intrinsicHeight
+                        val iconRight = itemView.right - iconMargin
+                        val iconLeft = iconRight - it.intrinsicWidth
+                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                        it.setTint(Color.WHITE)
+                        it.draw(c)
+                    }
+                }
+                super.onChildDraw(c, rv, vh, dX, dY, actionState, isCurrentlyActive)
+            }
+        }
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(rv)
+
         setupPetFilters(page)
         loadExpenses(page)
     }
@@ -616,7 +697,7 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun loadExpenses(page: View) {
-        val expenses = database.getExpenses(selectedPetId)
+        val expenses = database.getExpenses(selectedPetId, expensesSearchQuery.ifBlank { null })
         page.findViewById<RecyclerView>(R.id.recyclerViewExpenses).adapter = ExpenseAdapter(expenses)
         page.findViewById<TextView>(R.id.textEmptyExpenses).visibility =
             if (expenses.isEmpty()) View.VISIBLE else View.GONE
@@ -628,10 +709,12 @@ class DashboardActivity : AppCompatActivity() {
         val count = expenses.size
         val avg = if (count > 0) total / count else 0.0
         
+        /* 
         try {
             page.findViewById<TextView>(R.id.textTransactionCount).text = "$count entries"
             page.findViewById<TextView>(R.id.textAverageSpend).text = "${formatCurrency(avg)} avg"
-        } catch (_: Exception) {}
+        } catch (_: Exception) {} 
+        */
 
         renderBreakdown(page, expenses, total)
     }
@@ -846,7 +929,7 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         page.findViewById<MaterialButton>(R.id.buttonLogout).setOnClickListener {
-            AlertDialog.Builder(this)
+            MaterialAlertDialogBuilder(this)
                 .setTitle("Logout")
                 .setMessage("Are you sure you want to logout?")
                 .setPositiveButton("Logout") { _, _ ->
@@ -878,4 +961,9 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun Int.dp(): Int = (this * resources.displayMetrics.density).roundToInt()
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
 }

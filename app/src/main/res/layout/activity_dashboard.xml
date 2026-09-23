@@ -161,149 +161,185 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Professional Quick Actions Grid Row -->
-                <LinearLayout
+                <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
-                    android:orientation="horizontal"
-                    android:weightSum="4">
+                    android:scrollbars="none"
+                    android:clipToPadding="false">
 
                     <LinearLayout
-                        android:id="@+id/btnQuickAddPet"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:orientation="vertical">
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            app:cardCornerRadius="24dp"
-                            app:cardElevation="0dp"
-                            app:strokeWidth="0dp"
-                            app:cardBackgroundColor="@color/card_bg">
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_paw"
-                                app:tint="@color/black" />
-                        </com.google.android.material.card.MaterialCardView>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Add Pet"
-                            android:textSize="11sp"
-                            android:textColor="@color/indicator_dark"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                        android:orientation="horizontal"
+                        android:paddingEnd="16dp">
 
-                    <LinearLayout
-                        android:id="@+id/btnQuickAddTask"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:orientation="vertical">
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            app:cardCornerRadius="24dp"
-                            app:cardElevation="0dp"
-                            app:strokeWidth="0dp"
-                            app:cardBackgroundColor="@color/card_bg">
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_nav_tasks"
-                                app:tint="@color/black" />
-                        </com.google.android.material.card.MaterialCardView>
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/btnQuickAddPet"
+                            android:layout_width="88dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Add Task"
-                            android:textSize="11sp"
-                            android:textColor="@color/indicator_dark"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:orientation="vertical">
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp"
+                                app:cardBackgroundColor="@color/card_bg">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_paw"
+                                    app:tint="@color/black" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="Add Pet"
+                                android:textSize="11sp"
+                                android:textColor="@color/indicator_dark"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/btnQuickAddExpense"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:orientation="vertical">
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            app:cardCornerRadius="24dp"
-                            app:cardElevation="0dp"
-                            app:strokeWidth="0dp"
-                            app:cardBackgroundColor="@color/card_bg">
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_nav_expenses"
-                                app:tint="@color/black" />
-                        </com.google.android.material.card.MaterialCardView>
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/btnQuickAddTask"
+                            android:layout_width="88dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Expense"
-                            android:textSize="11sp"
-                            android:textColor="@color/indicator_dark"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:orientation="vertical">
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp"
+                                app:cardBackgroundColor="@color/card_bg">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_nav_tasks"
+                                    app:tint="@color/black" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="Add Task"
+                                android:textSize="11sp"
+                                android:textColor="@color/indicator_dark"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/btnQuickDelegate"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:orientation="vertical">
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            app:cardCornerRadius="24dp"
-                            app:cardElevation="0dp"
-                            app:strokeWidth="0dp"
-                            app:cardBackgroundColor="@color/card_bg">
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:layout_gravity="center"
-                                android:src="@android:drawable/ic_menu_call"
-                                app:tint="@color/black" />
-                        </com.google.android.material.card.MaterialCardView>
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/btnQuickAddExpense"
+                            android:layout_width="88dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Delegate"
-                            android:textSize="11sp"
-                            android:textColor="@color/indicator_dark"
-                            android:textStyle="bold" />
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:orientation="vertical">
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp"
+                                app:cardBackgroundColor="@color/card_bg">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_nav_expenses"
+                                    app:tint="@color/black" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="Expense"
+                                android:textSize="11sp"
+                                android:textColor="@color/indicator_dark"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/btnQuickDelegate"
+                            android:layout_width="88dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:orientation="vertical">
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp"
+                                app:cardBackgroundColor="@color/card_bg">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:layout_gravity="center"
+                                    android:src="@android:drawable/ic_menu_call"
+                                    app:tint="@color/black" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="Delegate"
+                                android:textSize="11sp"
+                                android:textColor="@color/indicator_dark"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/btnQuickLocations"
+                            android:layout_width="88dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:orientation="vertical">
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp"
+                                app:cardBackgroundColor="@color/card_bg">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:layout_gravity="center"
+                                    android:src="@android:drawable/ic_dialog_map"
+                                    app:tint="@color/black" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="Locations"
+                                android:textSize="11sp"
+                                android:textColor="@color/indicator_dark"
+                                android:textStyle="bold" />
+                        </LinearLayout>
                     </LinearLayout>
-                </LinearLayout>
+                </HorizontalScrollView>
 
                 <!-- Premium Pet Care Tip of the Day -->
                 <com.google.android.material.card.MaterialCardView
@@ -326,6 +362,7 @@
                             android:text="💡"
                             android:textSize="18sp" />
                         <TextView
+                            android:id="@+id/textCareTip"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
@@ -402,14 +439,14 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp">
+                    android:layout_marginTop="32dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Your pets"
+                        android:text="Your Pets"
                         android:textColor="@color/app_text_primary"
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -417,9 +454,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
                         android:text="0 pets"
                         android:textColor="@color/app_text_secondary"
-                        android:textSize="13sp" />
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
                 </RelativeLayout>
 
                 <!-- Pet List (RecyclerView Placeholder) -->
@@ -439,45 +478,13 @@
                     android:layout_marginTop="18dp"
                     android:gravity="center"
                     android:padding="20dp"
+                    android:drawablePadding="16dp"
+                    app:drawableTopCompat="@drawable/ic_paw"
+                    app:drawableTint="@color/indicator_grey"
                     android:text="No pets yet. Add your first pet to see it here."
                     android:textColor="@color/app_text_secondary"
                     android:textSize="14sp"
                     android:visibility="gone" />
-
-                <!-- Add Another Pet Row -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardAddPet"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_dashed_card"
-                        android:gravity="center"
-                        android:orientation="horizontal"
-                        android:padding="22dp">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@android:drawable/ic_input_add"
-                            app:tint="@color/app_text_secondary" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="Add another pet"
-                            android:textColor="@color/app_text_secondary"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
@@ -517,7 +524,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView android:layout_width="34dp" android:layout_height="34dp" android:contentDescription="Home" android:src="@drawable/ic_nav_home" app:tint="@color/black" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:includeFontPadding="false" android:maxLines="1" android:text="Home" android:textSize="12sp" android:textColor="@color/black" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:includeFontPadding="false" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="1" android:text="Home" android:textSize="12sp" android:textColor="@color/black" android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
@@ -531,7 +538,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView android:layout_width="34dp" android:layout_height="34dp" android:contentDescription="Tasks" android:src="@drawable/ic_nav_tasks" app:tint="@color/app_text_secondary" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:includeFontPadding="false" android:maxLines="1" android:text="Tasks" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
+                <TextView android:layout_width="wrap_content" android:includeFontPadding="false" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="1" android:text="Tasks" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
             </LinearLayout>
 
             <!-- FAB Space -->
@@ -551,7 +558,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView android:layout_width="34dp" android:layout_height="34dp" android:contentDescription="Expenses" android:src="@drawable/ic_nav_expenses" app:tint="@color/app_text_secondary" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:includeFontPadding="false" android:maxLines="1" android:text="Expenses" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
+                <TextView android:layout_width="wrap_content" android:includeFontPadding="false" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="1" android:text="Expenses" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
             </LinearLayout>
 
             <LinearLayout
@@ -565,7 +572,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView android:layout_width="34dp" android:layout_height="34dp" android:contentDescription="Profile" android:src="@drawable/ic_nav_profile" app:tint="@color/app_text_secondary" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:includeFontPadding="false" android:maxLines="1" android:text="Profile" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
+                <TextView android:layout_width="wrap_content" android:includeFontPadding="false" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="1" android:text="Profile" android:textSize="12sp" android:textColor="@color/app_text_secondary" />
             </LinearLayout>
 
         </LinearLayout>

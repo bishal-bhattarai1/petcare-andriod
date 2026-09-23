@@ -20,7 +20,7 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="72dp"
-                app:navigationIcon="?attr/homeAsUpIndicator">
+                app:navigationIcon="@drawable/ic_back_arrow">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -54,6 +54,32 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/app_divider" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                app:boxBackgroundColor="@color/app_input_bg"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:boxStrokeWidth="0dp"
+                app:hintEnabled="false"
+                app:startIconDrawable="@android:drawable/ic_menu_search"
+                app:startIconTint="@color/app_text_secondary">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editChecklistSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Search routines..."
+                    android:inputType="text"
+                    android:paddingVertical="14dp"
+                    android:textColor="@color/app_text_primary"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -79,6 +105,9 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:padding="24dp"
+        android:drawablePadding="16dp"
+        app:drawableTopCompat="@drawable/ic_walk"
+        app:drawableTint="@color/indicator_grey"
         android:text="No checklist items yet."
         android:textColor="@color/app_text_secondary"
         android:textSize="14sp"

@@ -39,7 +39,12 @@ data class CareTask(
     val weekDays: String = "",
     val completedWeekDays: String = "",
     val reminderEnabled: Boolean = false,
-    val avatarUri: String? = null
+    val avatarUri: String? = null,
+    val requiredSupplies: String = "",
+    val taskNotes: String = "",
+    val linkedLocationId: Long = -1L,
+    val locationName: String? = null,
+    val locationAddress: String? = null
 )
 
 data class PetPhoto(
@@ -53,12 +58,15 @@ data class PetLocation(
     val userId: Long,
     val name: String,
     val address: String,
-    val category: String
+    val category: String,
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0
 )
 
 data class HealthcareRecord(
     val id: Long,
     val petId: Long,
+    val petName: String,
     val type: String,
     val date: String,
     val notes: String
@@ -115,6 +123,44 @@ class AuthDatabaseHelper(context: Context) :
             createLocationsTable(db)
             createHealthcareTable(db)
         }
+
+        if (oldVersion < 10) {
+            addTaskSuppliesAndNotesColumns(db)
+        }
+
+        if (oldVersion < 11) {
+            addTaskLocationColumn(db)
+        }
+
+        if (oldVersion < 12) {
+            addPetCreatedAtColumn(db)
+        }
+
+        if (oldVersion < 13) {
+            ensureLocationsTableExists(db)
+        }
+    }
+
+    private fun addPetCreatedAtColumn(db: SQLiteDatabase) {
+        try {
+            db.execSQL("ALTER TABLE pets ADD COLUMN created_at INTEGER")
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun addTaskLocationColumn(db: SQLiteDatabase) {
+        try {
+            db.execSQL("ALTER TABLE tasks ADD COLUMN linked_location_id INTEGER DEFAULT -1")
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun addTaskSuppliesAndNotesColumns(db: SQLiteDatabase) {
+        try {
+            db.execSQL("ALTER TABLE tasks ADD COLUMN required_supplies TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE tasks ADD COLUMN task_notes TEXT DEFAULT ''")
+        } catch (_: Exception) {
+        }
     }
 
     private fun createPhotosTable(db: SQLiteDatabase) {
@@ -139,10 +185,24 @@ class AuthDatabaseHelper(context: Context) :
                 name TEXT NOT NULL,
                 address TEXT NOT NULL,
                 category TEXT NOT NULL,
+                latitude REAL DEFAULT 0.0,
+                longitude REAL DEFAULT 0.0,
                 FOREIGN KEY(user_id) REFERENCES $TABLE_USERS($COLUMN_ID) ON DELETE CASCADE
             )
             """.trimIndent()
         )
+        addLocationCoordinatesColumns(db)
+    }
+
+    private fun addLocationCoordinatesColumns(db: SQLiteDatabase) {
+        try {
+            db.execSQL("ALTER TABLE pet_locations ADD COLUMN latitude REAL DEFAULT 0.0")
+        } catch (_: Exception) {
+        }
+        try {
+            db.execSQL("ALTER TABLE pet_locations ADD COLUMN longitude REAL DEFAULT 0.0")
+        } catch (_: Exception) {
+        }
     }
 
     private fun createHealthcareTable(db: SQLiteDatabase) {
@@ -179,6 +239,25 @@ class AuthDatabaseHelper(context: Context) :
             put(COLUMN_NAME, name.trim())
             put(COLUMN_EMAIL, email.normalizedEmail())
             put(COLUMN_PASSWORD_HASH, password.hashForEmail(email))
+            put(COLUMN_CREATED_AT, System.currentTimeMillis())
+        }
+
+        return try {
+            writableDatabase.insertOrThrow(TABLE_USERS, null, values)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun createSocialUser(name: String, email: String): Boolean {
+        val normalized = email.normalizedEmail()
+        if (emailExists(normalized)) return true
+
+        val values = ContentValues().apply {
+            put(COLUMN_NAME, name.trim())
+            put(COLUMN_EMAIL, normalized)
+            put(COLUMN_PASSWORD_HASH, "SOCIAL_LOGIN_NO_PASSWORD")
             put(COLUMN_CREATED_AT, System.currentTimeMillis())
         }
 
@@ -317,6 +396,7 @@ class AuthDatabaseHelper(context: Context) :
             put("allergies", allergies)
             put("toys", toys)
             put("notes", notes)
+            put("created_at", System.currentTimeMillis())
             currentUserId()?.let { put("owner_id", it) }
         }
 
@@ -353,6 +433,8 @@ class AuthDatabaseHelper(context: Context) :
                 val allergies = it.getStringOrEmpty("allergies")
                 val toys = it.getStringOrEmpty("toys")
                 val notes = it.getStringOrEmpty("notes")
+                val createdAt = it.getLong(it.getColumnIndexOrThrow("created_at"))
+                
                 val progress = calculateProfileProgress(
                     name,
                     species,
@@ -371,6 +453,8 @@ class AuthDatabaseHelper(context: Context) :
                     .joinToString(" - ")
                     .ifBlank { "Pet profile" }
                 val taskCounts = getPetTaskCounts(petId)
+                val categoryStatus = getPetCategoryStatus(petId)
+                
                 val taskProgress = if (taskCounts.totalTasks == 0) {
                     0
                 } else {
@@ -392,7 +476,12 @@ class AuthDatabaseHelper(context: Context) :
                     totalTasks = taskCounts.totalTasks,
                     completedTasks = taskCounts.completedTasks,
                     statusAlert = taskStatus,
-                    isCritical = pendingTasks > 0
+                    isCritical = pendingTasks > 0,
+                    createdAt = createdAt,
+                    isFed = categoryStatus.isFed,
+                    isWalked = categoryStatus.isWalked,
+                    isMedsTaken = categoryStatus.isMedsTaken,
+                    isGroomed = categoryStatus.isGroomed
                 )
                 
                 // Fetch first photo for avatar
@@ -486,7 +575,10 @@ class AuthDatabaseHelper(context: Context) :
         scheduledTime: String = "",
         endsOn: String = "",
         delegate: Boolean = false,
-        reminder: Boolean = false
+        reminder: Boolean = false,
+        supplies: String = "",
+        notes: String = "",
+        locationId: Long = -1L
     ): Long {
         adoptOrphanPetsForCurrentUser()
         if (!canAccessPet(petId)) return -1L
@@ -502,6 +594,9 @@ class AuthDatabaseHelper(context: Context) :
             put("ends_on", endsOn)
             put("delegate_enabled", if (delegate) 1 else 0)
             put("reminder_enabled", if (reminder) 1 else 0)
+            put("required_supplies", supplies)
+            put("task_notes", notes)
+            put("linked_location_id", locationId)
         }
 
         return try {
@@ -538,9 +633,15 @@ class AuthDatabaseHelper(context: Context) :
                 t.is_completed,
                 t.week_days,
                 t.completed_week_days,
-                t.reminder_enabled
+                t.reminder_enabled,
+                t.required_supplies,
+                t.task_notes,
+                t.linked_location_id,
+                l.name as loc_name,
+                l.address as loc_addr
             FROM tasks t
             LEFT JOIN pets p ON p.id = t.pet_id
+            LEFT JOIN pet_locations l ON l.id = t.linked_location_id
             $whereClause
             ORDER BY t.is_completed ASC, t.id DESC
             """.trimIndent(),
@@ -561,7 +662,12 @@ class AuthDatabaseHelper(context: Context) :
                         isCompleted = it.getIntOrZero("is_completed") == 1,
                         weekDays = it.getStringOrEmpty("week_days"),
                         completedWeekDays = it.getStringOrEmpty("completed_week_days"),
-                        reminderEnabled = it.getIntOrZero("reminder_enabled") == 1
+                        reminderEnabled = it.getIntOrZero("reminder_enabled") == 1,
+                        requiredSupplies = it.getStringOrEmpty("required_supplies"),
+                        taskNotes = it.getStringOrEmpty("task_notes"),
+                        linkedLocationId = it.getLong(it.getColumnIndexOrThrow("linked_location_id")),
+                        locationName = it.getStringOrEmpty("loc_name"),
+                        locationAddress = it.getStringOrEmpty("loc_addr")
                     )
                 )
             }
@@ -589,12 +695,14 @@ class AuthDatabaseHelper(context: Context) :
         }
     }
 
-    fun updateTaskDetails(taskId: Long, description: String, scheduledTime: String): Boolean {
+    fun updateTaskDetails(taskId: Long, description: String, scheduledTime: String, supplies: String, notes: String): Boolean {
         if (!canAccessTask(taskId)) return false
 
         val values = ContentValues().apply {
             put("description", description)
             put("scheduled_time", scheduledTime)
+            put("required_supplies", supplies)
+            put("task_notes", notes)
         }
 
         return try {
@@ -604,6 +712,36 @@ class AuthDatabaseHelper(context: Context) :
                 "id = ?",
                 arrayOf(taskId.toString())
             ) > 0
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun resetDailyTasks(): Boolean {
+        val values = ContentValues().apply {
+            put("is_completed", 0)
+            put("completed_week_days", "")
+        }
+        return try {
+            writableDatabase.update("tasks", values, null, null) > 0
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun deleteTask(taskId: Long): Boolean {
+        if (!canAccessTask(taskId)) return false
+        return try {
+            writableDatabase.delete("tasks", "id = ?", arrayOf(taskId.toString())) > 0
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun deletePet(petId: Long): Boolean {
+        if (!canAccessPet(petId)) return false
+        return try {
+            writableDatabase.delete("pets", "id = ?", arrayOf(petId.toString())) > 0
         } catch (_: Exception) {
             false
         }
@@ -654,19 +792,28 @@ class AuthDatabaseHelper(context: Context) :
         }
     }
 
-    fun getExpenses(petId: Long? = null): List<ExpenseTransaction> {
+    fun getExpenses(petId: Long? = null, query: String? = null): List<ExpenseTransaction> {
         adoptOrphanPetsForCurrentUser()
         val expenses = mutableListOf<ExpenseTransaction>()
         val clauses = mutableListOf<String>()
         val args = mutableListOf<String>()
+        
         petId?.let {
             clauses.add("e.pet_id = ?")
             args.add(it.toString())
         }
+        
         currentUserId()?.let {
             clauses.add("p.owner_id = ?")
             args.add(it.toString())
         }
+
+        if (!query.isNullOrBlank()) {
+            clauses.add("(e.description LIKE ? OR p.name LIKE ?)")
+            args.add("%$query%")
+            args.add("%$query%")
+        }
+
         val whereClause = if (clauses.isEmpty()) "" else "WHERE ${clauses.joinToString(" AND ")}"
         val cursor = readableDatabase.rawQuery(
             """
@@ -703,6 +850,14 @@ class AuthDatabaseHelper(context: Context) :
         }
 
         return expenses
+    }
+
+    fun deleteExpense(expenseId: Long): Boolean {
+        return try {
+            writableDatabase.delete("expenses", "id = ?", arrayOf(expenseId.toString())) > 0
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun createExpensesTable(db: SQLiteDatabase) {
@@ -753,6 +908,7 @@ class AuthDatabaseHelper(context: Context) :
                 toys TEXT,
                 notes TEXT,
                 owner_id INTEGER,
+                created_at INTEGER,
                 FOREIGN KEY(owner_id) REFERENCES $TABLE_USERS($COLUMN_ID)
             )
             """.trimIndent()
@@ -803,6 +959,45 @@ class AuthDatabaseHelper(context: Context) :
             }
         }
     }
+
+    private fun getPetCategoryStatus(petId: Long): PetCategoryStatus {
+        val cursor = readableDatabase.rawQuery(
+            """
+            SELECT category, MAX(is_completed) as completed
+            FROM tasks
+            WHERE pet_id = ?
+            GROUP BY category
+            """.trimIndent(),
+            arrayOf(petId.toString())
+        )
+        
+        var isFed = false
+        var isWalked = false
+        var isMedsTaken = false
+        var isGroomed = false
+        
+        cursor.use {
+            while (it.moveToNext()) {
+                val cat = it.getString(it.getColumnIndexOrThrow("category")).lowercase()
+                val done = it.getInt(it.getColumnIndexOrThrow("completed")) == 1
+                when {
+                    cat.contains("feed") || cat.contains("food") -> if (done) isFed = true
+                    cat.contains("walk") -> if (done) isWalked = true
+                    cat.contains("med") || cat.contains("health") -> if (done) isMedsTaken = true
+                    cat.contains("groom") -> if (done) isGroomed = true
+                }
+            }
+        }
+        
+        return PetCategoryStatus(isFed, isWalked, isMedsTaken, isGroomed)
+    }
+
+    private data class PetCategoryStatus(
+        val isFed: Boolean,
+        val isWalked: Boolean,
+        val isMedsTaken: Boolean,
+        val isGroomed: Boolean
+    )
 
     private fun addTaskScheduleColumns(db: SQLiteDatabase) {
         listOf(
@@ -1018,33 +1213,143 @@ class AuthDatabaseHelper(context: Context) :
         return uris
     }
 
-    fun saveLocation(name: String, address: String, category: String): Boolean {
-        val userId = currentUserId() ?: return false
-        val values = ContentValues().apply {
-            put("user_id", userId)
-            put("name", name)
-            put("address", address)
-            put("category", category)
+    private fun ensureValidUserId(): Long {
+        currentUserId()?.let { return it }
+
+        val cursor = readableDatabase.query(TABLE_USERS, arrayOf(COLUMN_ID), null, null, null, null, "$COLUMN_ID ASC", "1")
+        cursor.use {
+            if (it.moveToFirst()) {
+                return it.getLong(it.getColumnIndexOrThrow(COLUMN_ID))
+            }
         }
-        return writableDatabase.insert("pet_locations", null, values) != -1L
+
+        val uniqueEmail = "guest_${System.currentTimeMillis()}@petcare.app"
+        val values = ContentValues().apply {
+            put(COLUMN_NAME, "Pet Lover")
+            put(COLUMN_EMAIL, uniqueEmail)
+            put(COLUMN_PASSWORD_HASH, "GUEST_HASH")
+            put(COLUMN_CREATED_AT, System.currentTimeMillis())
+        }
+        val newId = writableDatabase.insert(TABLE_USERS, null, values)
+        if (newId != -1L) return newId
+
+        val retryCursor = readableDatabase.query(TABLE_USERS, arrayOf(COLUMN_ID), null, null, null, null, "$COLUMN_ID ASC", "1")
+        retryCursor.use {
+            if (it.moveToFirst()) {
+                return it.getLong(it.getColumnIndexOrThrow(COLUMN_ID))
+            }
+        }
+        return 1L
+    }
+
+    private fun ensureLocationsTableExists(db: SQLiteDatabase) {
+        try {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS pet_locations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER DEFAULT 1,
+                    name TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    category TEXT DEFAULT 'General',
+                    latitude REAL DEFAULT 0.0,
+                    longitude REAL DEFAULT 0.0
+                )
+                """.trimIndent()
+            )
+        } catch (_: Exception) {
+        }
+        try {
+            db.execSQL("ALTER TABLE pet_locations ADD COLUMN latitude REAL DEFAULT 0.0")
+        } catch (_: Exception) {
+        }
+        try {
+            db.execSQL("ALTER TABLE pet_locations ADD COLUMN longitude REAL DEFAULT 0.0")
+        } catch (_: Exception) {
+        }
+    }
+
+    fun saveLocationAndGetId(name: String, address: String, category: String, latitude: Double = 0.0, longitude: Double = 0.0): Long {
+        return try {
+            val db = writableDatabase
+            ensureLocationsTableExists(db)
+            val userId = ensureValidUserId()
+            val values = ContentValues().apply {
+                put("user_id", userId)
+                put("name", name.ifBlank { "Pet Location" })
+                put("address", address.ifBlank { "Unspecified Address" })
+                put("category", category.ifBlank { "General" })
+                put("latitude", latitude)
+                put("longitude", longitude)
+            }
+            db.insert("pet_locations", null, values)
+        } catch (_: Exception) {
+            -1L
+        }
+    }
+
+    fun saveLocation(name: String, address: String, category: String, latitude: Double = 0.0, longitude: Double = 0.0): Boolean {
+        return saveLocationAndGetId(name, address, category, latitude, longitude) != -1L
     }
 
     fun getLocations(): List<PetLocation> {
-        val userId = currentUserId() ?: return emptyList()
         val list = mutableListOf<PetLocation>()
-        val cursor = readableDatabase.query("pet_locations", null, "user_id = ?", arrayOf(userId.toString()), null, null, "id DESC")
-        cursor.use {
-            while (it.moveToNext()) {
-                list.add(PetLocation(
-                    id = it.getLong(it.getColumnIndexOrThrow("id")),
-                    userId = userId,
-                    name = it.getStringOrEmpty("name"),
-                    address = it.getStringOrEmpty("address"),
-                    category = it.getStringOrEmpty("category")
-                ))
+        try {
+            val db = readableDatabase
+            ensureLocationsTableExists(db)
+            val cursor = db.query(
+                "pet_locations",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "id DESC"
+            )
+            cursor.use {
+                val latIndex = it.getColumnIndex("latitude")
+                val lngIndex = it.getColumnIndex("longitude")
+                while (it.moveToNext()) {
+                    val lat = if (latIndex != -1 && !it.isNull(latIndex)) it.getDouble(latIndex) else 0.0
+                    val lng = if (lngIndex != -1 && !it.isNull(lngIndex)) it.getDouble(lngIndex) else 0.0
+                    list.add(PetLocation(
+                        id = it.getLong(it.getColumnIndexOrThrow("id")),
+                        userId = it.getLong(it.getColumnIndexOrThrow("user_id")),
+                        name = it.getStringOrEmpty("name"),
+                        address = it.getStringOrEmpty("address"),
+                        category = it.getStringOrEmpty("category"),
+                        latitude = lat,
+                        longitude = lng
+                    ))
+                }
             }
+        } catch (_: Exception) {
         }
         return list
+    }
+
+    fun updateLocationCoordinates(id: Long, latitude: Double, longitude: Double): Boolean {
+        val values = ContentValues().apply {
+            put("latitude", latitude)
+            put("longitude", longitude)
+        }
+        return writableDatabase.update("pet_locations", values, "id = ?", arrayOf(id.toString())) > 0
+    }
+
+    fun deleteLocation(id: Long): Boolean {
+        return try {
+            writableDatabase.delete("pet_locations", "id = ?", arrayOf(id.toString())) > 0
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun deleteHealthcareRecord(id: Long): Boolean {
+        return try {
+            writableDatabase.delete("healthcare_history", "id = ?", arrayOf(id.toString())) > 0
+        } catch (_: Exception) {
+            false
+        }
     }
 
     fun saveHealthcareRecord(petId: Long, type: String, date: String, notes: String): Boolean {
@@ -1059,12 +1364,22 @@ class AuthDatabaseHelper(context: Context) :
 
     fun getHealthcareHistory(petId: Long): List<HealthcareRecord> {
         val list = mutableListOf<HealthcareRecord>()
-        val cursor = readableDatabase.query("healthcare_history", null, "pet_id = ?", arrayOf(petId.toString()), null, null, "date DESC")
+        val cursor = readableDatabase.rawQuery(
+            """
+            SELECT h.*, p.name as pet_name
+            FROM healthcare_history h
+            INNER JOIN pets p ON h.pet_id = p.id
+            WHERE h.pet_id = ?
+            ORDER BY h.date DESC
+            """.trimIndent(),
+            arrayOf(petId.toString())
+        )
         cursor.use {
             while (it.moveToNext()) {
                 list.add(HealthcareRecord(
                     id = it.getLong(it.getColumnIndexOrThrow("id")),
-                    petId = petId,
+                    petId = it.getLong(it.getColumnIndexOrThrow("pet_id")),
+                    petName = it.getStringOrEmpty("pet_name"),
                     type = it.getStringOrEmpty("type"),
                     date = it.getStringOrEmpty("date"),
                     notes = it.getStringOrEmpty("notes")
@@ -1081,7 +1396,7 @@ class AuthDatabaseHelper(context: Context) :
         // Joining with pets to ensure we only get history for pets owned by the current user
         val cursor = readableDatabase.rawQuery(
             """
-            SELECT h.* 
+            SELECT h.*, p.name as pet_name
             FROM healthcare_history h
             INNER JOIN pets p ON h.pet_id = p.id
             WHERE p.owner_id = ?
@@ -1095,6 +1410,7 @@ class AuthDatabaseHelper(context: Context) :
                 list.add(HealthcareRecord(
                     id = it.getLong(it.getColumnIndexOrThrow("id")),
                     petId = it.getLong(it.getColumnIndexOrThrow("pet_id")),
+                    petName = it.getStringOrEmpty("pet_name"),
                     type = it.getStringOrEmpty("type"),
                     date = it.getStringOrEmpty("date"),
                     notes = it.getStringOrEmpty("notes")
@@ -1106,7 +1422,7 @@ class AuthDatabaseHelper(context: Context) :
 
     companion object {
         private const val DATABASE_NAME = "petcare_v3.db"
-        private const val DATABASE_VERSION = 9
+        private const val DATABASE_VERSION = 12
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_NAME = "name"

@@ -43,7 +43,7 @@ class PersonalInfoActivity : AppCompatActivity() {
         database = AuthDatabaseHelper(this)
         sessionManager = SessionManager(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
         
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
@@ -111,5 +111,10 @@ class PersonalInfoActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "Failed to update profile", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 }

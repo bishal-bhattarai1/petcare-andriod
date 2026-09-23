@@ -27,5 +27,17 @@ class ReminderReceiver : BroadcastReceiver() {
             val message = "${task.petName} is ready for: ${task.description}"
             notificationHelper.showTaskNotification(taskId, title, message)
         }
+
+        // Handle Pet Vaccination
+        val petId = intent.getLongExtra("PET_ID", -1L)
+        val type = intent.getStringExtra("TYPE")
+        if (petId != -1L && type == "VACCINE") {
+            val petName = intent.getStringExtra("PET_NAME") ?: "Your pet"
+            NotificationHelper(context).showTaskNotification(
+                petId + 10000, 
+                "Vaccination Reminder!", 
+                "$petName's vaccination is scheduled for today. Don't forget to check their profile for details."
+            )
+        }
     }
 }

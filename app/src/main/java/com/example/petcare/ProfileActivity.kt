@@ -1,6 +1,8 @@
 package com.example.petcare
 
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -45,7 +48,9 @@ class ProfileActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         database = AuthDatabaseHelper(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
+        updateBottomNavigationUI()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_profile)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
@@ -153,7 +158,7 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.buttonLogout).setOnClickListener {
-            AlertDialog.Builder(this)
+            MaterialAlertDialogBuilder(this)
                 .setTitle("Logout")
                 .setMessage("Are you sure you want to logout?")
                 .setPositiveButton("Logout") { _, _ ->
@@ -197,4 +202,39 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
+
+    private fun updateBottomNavigationUI() {
+        val navItems = listOf(
+            R.id.navHome to false,
+            R.id.navTasks to false,
+            R.id.navExpenses to false,
+            R.id.navProfile to true
+        )
+
+        navItems.forEach { (viewId, isSelected) ->
+            val item = findViewById<LinearLayout>(viewId)
+            val selected = isSelected
+            item.setBackgroundResource(if (selected) R.drawable.bg_bottom_nav_selected else 0)
+            (item.layoutParams as? LinearLayout.LayoutParams)?.let { params ->
+                val margin = if (selected) (4 * resources.displayMetrics.density).toInt() else 0
+                params.marginStart = margin
+                params.marginEnd = margin
+                item.layoutParams = params
+            }
+
+            val color = ContextCompat.getColor(
+                this,
+                if (selected) R.color.black else R.color.app_text_secondary
+            )
+            val image = item.getChildAt(0) as? ImageView
+            val label = item.getChildAt(1) as? TextView
+            image?.imageTintList = ColorStateList.valueOf(color)
+            label?.setTextColor(color)
+            label?.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+        }
+    }
 }

@@ -29,7 +29,7 @@ class NotificationsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_notifications)
         database = AuthDatabaseHelper(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_notifications)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
@@ -115,7 +115,7 @@ class NotificationsActivity : AppCompatActivity() {
             setPadding(12.dp(), 0, 12.dp(), 0)
         }
         content.addView(TextView(this).apply {
-            text = record.type
+            text = "${record.petName} • ${record.type}"
             setTextColor(ContextCompat.getColor(this@NotificationsActivity, R.color.app_text_primary))
             textSize = 14f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -300,6 +300,11 @@ class NotificationsActivity : AppCompatActivity() {
     }
 
     private fun Int.dp(): Int = (this * resources.displayMetrics.density).roundToInt()
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
 
     private enum class ReminderState(val priority: Int) {
         OVERDUE(0),

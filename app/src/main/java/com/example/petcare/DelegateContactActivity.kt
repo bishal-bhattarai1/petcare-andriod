@@ -68,7 +68,7 @@ class DelegateContactActivity : AppCompatActivity() {
         database = AuthDatabaseHelper(this)
         sessionManager = SessionManager(this)
 
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -200,6 +200,8 @@ class DelegateContactActivity : AppCompatActivity() {
                 if (pendingTasks.isNotEmpty()) {
                     pendingTasks.forEach { task ->
                         builder.append("- ${task.description} [${task.scheduledTime.ifBlank { "Anytime" }}]\n")
+                        if (task.requiredSupplies.isNotBlank()) builder.append("  📦 Supplies: ${task.requiredSupplies}\n")
+                        if (task.taskNotes.isNotBlank()) builder.append("  💡 Notes: ${task.taskNotes}\n")
                     }
                 } else {
                     builder.append("All scheduled care tasks are currently completed!\n")
@@ -211,6 +213,8 @@ class DelegateContactActivity : AppCompatActivity() {
                 if (feedingTasks.isNotEmpty()) {
                     feedingTasks.forEach { task ->
                         builder.append("- ${task.description} at ${task.scheduledTime.ifBlank { "Scheduled time" }}\n")
+                        if (task.requiredSupplies.isNotBlank()) builder.append("  📦 Supplies: ${task.requiredSupplies}\n")
+                        if (task.taskNotes.isNotBlank()) builder.append("  💡 Notes: ${task.taskNotes}\n")
                     }
                 } else {
                     builder.append("- Regular feeding morning and evening.\n")
@@ -222,6 +226,8 @@ class DelegateContactActivity : AppCompatActivity() {
                 if (medTasks.isNotEmpty()) {
                     medTasks.forEach { task ->
                         builder.append("- ${task.description} [Time: ${task.scheduledTime.ifBlank { "As prescribed" }}]\n")
+                        if (task.requiredSupplies.isNotBlank()) builder.append("  📦 Supplies: ${task.requiredSupplies}\n")
+                        if (task.taskNotes.isNotBlank()) builder.append("  💡 Notes: ${task.taskNotes}\n")
                     }
                 } else {
                     builder.append("No active medications listed for today.\n")
@@ -298,5 +304,10 @@ class DelegateContactActivity : AppCompatActivity() {
         builder.append("\nRegards,\n$senderName\n(Sent via PetCare)")
 
         textMessagePreview.text = builder.toString()
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 }

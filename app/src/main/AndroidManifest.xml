@@ -4,6 +4,10 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:name=".PetCareApplication"
@@ -78,6 +82,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".LocationMapActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ShareReceiverActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
             android:exported="true">
@@ -85,6 +93,12 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter android:label="Open in PetCare">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="petcare" />
             </intent-filter>
         </activity>
 

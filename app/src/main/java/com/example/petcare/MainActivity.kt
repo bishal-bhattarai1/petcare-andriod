@@ -13,7 +13,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
 import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : AppCompatActivity() {
@@ -35,8 +34,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Ensure status bar icons are dark on light background
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+        updateStatusBarIcons()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -59,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         
         // Social Placeholder
         findViewById<View>(R.id.buttonGoogleSignIn)?.setOnClickListener {
-            Toast.makeText(this, "Google Sign-In Placeholder", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Sign-in with Google is coming soon!", Toast.LENGTH_SHORT).show()
         }
 
         // Forgot Password
@@ -164,5 +162,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMessage(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateStatusBarIcons() {
+        val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 }
