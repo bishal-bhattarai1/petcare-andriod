@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Read-only row used by the Pet history lists (care, expenses, health). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="60dp"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="10dp">
+
+    <FrameLayout
+        android:id="@+id/historyIconBg"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@drawable/bg_circle">
+
+        <ImageView
+            android:id="@+id/historyIcon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="center"
+            tools:ignore="ContentDescription"
+            tools:src="@drawable/ic_bowl" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/historyTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/app_text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="Food refill" />
+
+        <TextView
+            android:id="@+id/historySubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/app_text_secondary"
+            android:textSize="12sp"
+            tools:text="Food · 19 Sep 2026" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/historyTrailing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:textColor="@color/app_text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="$24.00" />
+</LinearLayout>

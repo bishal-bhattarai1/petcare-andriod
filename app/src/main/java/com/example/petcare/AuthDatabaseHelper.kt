@@ -27,6 +27,14 @@ data class ExpenseTransaction(
     val amount: Double
 )
 
+/** One routine completed on one day ("yyyy-MM-dd"), for the pet history screen. */
+data class CompletionEntry(
+    val taskId: Long,
+    val description: String,
+    val category: String,
+    val date: String
+)
+
 data class CareTask(
     val id: Long,
     val petId: Long,
@@ -787,19 +795,6 @@ class AuthDatabaseHelper(context: Context) :
         }
     }
 
-    fun resetDailyTasks(): Boolean {
-        val values = ContentValues().apply {
-            put("is_completed", 0)
-            put("completed_week_days", "")
-        }
-        return try {
-            writableDatabase.delete("task_completions", "completed_date = ?", arrayOf(todayKey()))
-            writableDatabase.update("tasks", values, null, null) > 0
-        } catch (_: Exception) {
-            false
-        }
-    }
-
     fun deleteTask(taskId: Long): Boolean {
         if (!canAccessTask(taskId)) return false
         return try {
@@ -1456,6 +1451,46 @@ class AuthDatabaseHelper(context: Context) :
     fun deleteLocation(id: Long): Boolean {
         return try {
             writableDatabase.delete("pet_locations", "id = ?", arrayOf(id.toString())) > 0
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** Every day each of the pet's routines was completed, newest first. Read-only history. */
+    fun getCompletionHistory(petId: Long): List<CompletionEntry> {
+        if (!canAccessPet(petId)) return emptyList()
+        val entries = mutableListOf<CompletionEntry>()
+        val cursor = readableDatabase.rawQuery(
+            """
+            SELECT t.id, t.description, t.category, c.completed_date
+            FROM task_completions c
+            INNER JOIN tasks t ON t.id = c.task_id
+            WHERE t.pet_id = ?
+            ORDER BY c.completed_date DESC, t.scheduled_time ASC
+            """.trimIndent(),
+            arrayOf(petId.toString())
+        )
+        cursor.use {
+            while (it.moveToNext()) {
+                entries.add(
+                    CompletionEntry(
+                        taskId = it.getLong(0),
+                        description = it.getString(1).orEmpty(),
+                        category = it.getString(2).orEmpty(),
+                        date = it.getString(3).orEmpty()
+                    )
+                )
+            }
+        }
+        return entries
+    }
+
+    /** Sets the pet's next vaccination due date ("dd/MM/yyyy"), e.g. after logging a vaccination. */
+    fun updatePetVaccineDate(petId: Long, date: String): Boolean {
+        if (!canAccessPet(petId)) return false
+        val values = ContentValues().apply { put("vaccine_date", date) }
+        return try {
+            writableDatabase.update("pets", values, "id = ?", arrayOf(petId.toString())) > 0
         } catch (_: Exception) {
             false
         }

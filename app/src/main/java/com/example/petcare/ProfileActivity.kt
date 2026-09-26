@@ -117,6 +117,10 @@ class ProfileActivity : AppCompatActivity() {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
+        findViewById<View>(R.id.layoutPetHistory).setOnClickListener {
+            startActivity(Intent(this, PetHistoryActivity::class.java))
+        }
+
         findViewById<View>(R.id.layoutPersonalInfo).setOnClickListener {
             startActivity(Intent(this, PersonalInfoActivity::class.java))
         }

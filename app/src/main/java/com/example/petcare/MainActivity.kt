@@ -231,6 +231,7 @@ class MainActivity : AppCompatActivity() {
                     completeSignIn(userName, email)
                 } else {
                     findViewById<EditText>(R.id.loginPasswordInput).text?.clear()
+                    cancelAutofill() // Don't offer to save, or later refill, credentials that didn't work.
                     showMessage("Invalid email or password.")
                 }
             }
@@ -422,6 +423,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showWelcome() {
+        cancelAutofill()
         resetLoginForm()
         resetSignUpForm()
         welcomePanel.visibility = View.VISIBLE
@@ -430,6 +432,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showLogin() {
+        cancelAutofill()
         if (loginPanel.visibility != View.VISIBLE) resetLoginForm()
         resetSignUpForm()
         welcomePanel.visibility = View.GONE
@@ -439,6 +442,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showSignUp() {
+        cancelAutofill()
         resetLoginForm()
         if (signUpPanel.visibility != View.VISIBLE) resetSignUpForm()
         welcomePanel.visibility = View.GONE
@@ -448,6 +452,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun textOf(inputId: Int): String =
         findViewById<EditText>(inputId).text?.toString()?.trim().orEmpty()
+
+    /**
+     * Ends the current autofill session so text typed in one form (e.g. a wrong sign-in)
+     * isn't remembered by the password manager and suggested in another form.
+     */
+    private fun cancelAutofill() {
+        getSystemService(android.view.autofill.AutofillManager::class.java)?.cancel()
+    }
 
     /** Back to the initial state: only a "Remember me" email is kept; the password is always cleared. */
     private fun resetLoginForm() {

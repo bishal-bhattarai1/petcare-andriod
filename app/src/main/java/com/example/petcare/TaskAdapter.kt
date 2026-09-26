@@ -113,7 +113,7 @@ class TaskAdapter(
         // Popup Menu on Three Dots
         holder.moreOptions.setOnClickListener { view ->
             val popup = PopupMenu(ctx, view)
-            popup.menu.add(0, 1, 0, if (task.isCompleted) "Mark as Pending" else "✓ Mark Complete")
+            if (!task.isCompleted) popup.menu.add(0, 1, 0, "✓ Mark Complete")
             popup.menu.add(0, 2, 1, "📋 Open Checklist")
             if (onEdit != null && !task.isCompleted) {
                 popup.menu.add(0, 4, 2, "✏️ Edit Routine")

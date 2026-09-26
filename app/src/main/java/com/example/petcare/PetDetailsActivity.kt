@@ -1,9 +1,7 @@
 package com.example.petcare
 
-import android.app.AlarmManager
 import android.app.DatePickerDialog
 import android.app.Dialog
-import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -64,6 +62,7 @@ class PetDetailsActivity : AppCompatActivity() {
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var petId: Long = -1L
     private var petName: String = ""
+    private var vaccineDate: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,6 +96,7 @@ class PetDetailsActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.buttonAddHistory).setOnClickListener { showAddHistoryDialog() }
+        findViewById<View>(R.id.cardVaccine).setOnClickListener { showVaccineOptions() }
         findViewById<View>(R.id.buttonManagePhotos).setOnClickListener { openEditor() }
         findViewById<View>(R.id.buttonPetChecklist).setOnClickListener {
             startActivity(
@@ -152,9 +152,7 @@ class PetDetailsActivity : AppCompatActivity() {
             toys = values.getAsString("toys").orEmpty(),
             notes = values.getAsString("notes").orEmpty(),
             photos = database.getPetPhotos(petId),
-            // Stored as text (d/M/yyyy), so sort by the parsed date, newest first.
-            records = database.getHealthcareHistory(petId)
-                .sortedByDescending { parseExpenseDate(it.date)?.time ?: Long.MIN_VALUE },
+            records = sortRecords(database.getHealthcareHistory(petId)),
             tasksDone = tasks.count { it.isCompleted },
             tasksTotal = tasks.size,
             totalSpent = database.getExpenses(petId).sumOf { it.amount }
@@ -210,6 +208,7 @@ class PetDetailsActivity : AppCompatActivity() {
     }
 
     private fun renderVaccine(stored: String) {
+        vaccineDate = stored
         val dateText = findViewById<TextView>(R.id.textPetVaccine)
         val status = findViewById<TextView>(R.id.textVaccineStatus)
         val date = parseExpenseDate(stored)
@@ -299,6 +298,18 @@ class PetDetailsActivity : AppCompatActivity() {
         }
     }
 
+    /** Dates are stored as text, so sort by the parsed date: upcoming soonest first, then past newest first. */
+    private fun sortRecords(records: List<HealthcareRecord>): List<HealthcareRecord> {
+        val today = startOfToday().timeInMillis
+        val (upcoming, past) = records.partition { (parseExpenseDate(it.date)?.time ?: Long.MIN_VALUE) > today }
+        return upcoming.sortedBy { parseExpenseDate(it.date)!!.time } +
+            past.sortedByDescending { parseExpenseDate(it.date)?.time ?: Long.MIN_VALUE }
+    }
+
+    private fun startOfToday(): Calendar = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }
+
     private fun renderRecords(records: List<HealthcareRecord>) {
         val layout = findViewById<LinearLayout>(R.id.layoutHealthcareHistory)
         layout.removeAllViews()
@@ -309,30 +320,26 @@ class PetDetailsActivity : AppCompatActivity() {
         records.forEachIndexed { index, record ->
             if (index > 0) layout.addView(divider(66.dp()))
             val row = inflater.inflate(R.layout.item_health_record, layout, false)
-            val style = recordStyle(record.type)
+            val style = healthRecordStyle(record.type)
             row.findViewById<View>(R.id.recordIconBg).backgroundTintList = ContextCompat.getColorStateList(this, style.bg)
             row.findViewById<ImageView>(R.id.recordIcon).apply {
                 setImageResource(style.icon)
                 imageTintList = ContextCompat.getColorStateList(this@PetDetailsActivity, style.fg)
             }
             row.findViewById<TextView>(R.id.recordTitle).text = record.type.ifBlank { "Record" }
+            val days = parseExpenseDate(record.date)
+                ?.let { TimeUnit.MILLISECONDS.toDays(it.time - startOfToday().timeInMillis).toInt() }
+            row.findViewById<TextView>(R.id.recordUpcoming).apply {
+                visibility = if (days != null && days > 0) View.VISIBLE else View.GONE
+                text = when (days) {
+                    1 -> "Tomorrow"
+                    else -> "In $days days"
+                }
+            }
             row.findViewById<TextView>(R.id.recordMeta).text =
                 listOf(displayDate(record.date), record.notes).filter { it.isNotBlank() }.joinToString(" · ")
             row.findViewById<ImageButton>(R.id.recordDelete).setOnClickListener { showDeleteHistoryConfirmation(record) }
             layout.addView(row)
-        }
-    }
-
-    private data class RecordStyle(val icon: Int, val bg: Int, val fg: Int)
-
-    private fun recordStyle(type: String): RecordStyle {
-        val t = type.lowercase()
-        return when {
-            "vacc" in t -> RecordStyle(R.drawable.ic_meds, R.color.cat_healthcare_bg, R.color.cat_healthcare_fg)
-            "check" in t || "exam" in t -> RecordStyle(R.drawable.ic_status_check, R.color.cat_exercise_bg, R.color.cat_exercise_fg)
-            "surg" in t -> RecordStyle(R.drawable.ic_status_alert, R.color.cat_medication_bg, R.color.cat_medication_fg)
-            "med" in t -> RecordStyle(R.drawable.ic_meds, R.color.cat_grooming_bg, R.color.cat_grooming_fg)
-            else -> RecordStyle(R.drawable.ic_paw, R.color.cat_cleaning_bg, R.color.cat_cleaning_fg)
         }
     }
 
@@ -365,7 +372,7 @@ class PetDetailsActivity : AppCompatActivity() {
             .setPositiveButton("Delete") { _, _ ->
                 runInBackground({ database.deletePet(petId) }) { deleted ->
                     if (deleted) {
-                        cancelVaccineReminder()
+                        VaccineReminder.cancel(this, petId)
                         Toast.makeText(this, "${petName.ifBlank { "Pet" }} deleted", Toast.LENGTH_SHORT).show()
                         finish()
                     } else {
@@ -374,16 +381,6 @@ class PetDetailsActivity : AppCompatActivity() {
                 }
             }
             .show()
-    }
-
-    /** Matches the alarm scheduled in [AddEditPetActivity] (request code petId + 10000). */
-    private fun cancelVaccineReminder() {
-        val pending = PendingIntent.getBroadcast(
-            this, petId.toInt() + 10000, Intent(this, ReminderReceiver::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_NO_CREATE
-        ) ?: return
-        getSystemService(AlarmManager::class.java)?.cancel(pending)
-        pending.cancel()
     }
 
     private fun showDeleteHistoryConfirmation(record: HealthcareRecord) {
@@ -400,12 +397,79 @@ class PetDetailsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showAddHistoryDialog() {
+    private fun showVaccineOptions() {
+        val hasDate = vaccineDate.isNotBlank()
+        val options = if (hasDate) {
+            arrayOf("Mark as given…", "Change date", "Remove date")
+        } else {
+            arrayOf("Set date")
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Next vaccination")
+            .setItems(options) { _, which ->
+                when (options[which]) {
+                    "Mark as given…" -> showAddHistoryDialog(preselectType = RECORD_TYPES.first())
+                    "Change date", "Set date" -> pickVaccineDate()
+                    "Remove date" -> confirmRemoveVaccineDate()
+                }
+            }
+            .show()
+    }
+
+    /** Next due date: today or later only. */
+    private fun pickVaccineDate() {
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }
+        val initial = Calendar.getInstance()
+        parseExpenseDate(vaccineDate)?.takeIf { !it.before(today.time) }?.let { initial.time = it }
+        DatePickerDialog(this, { _, y, m, d ->
+            val picked = Calendar.getInstance().apply { set(y, m, d) }
+            saveVaccineDate(SimpleDateFormat("dd/MM/yyyy", Locale.US).format(picked.time))
+        }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).apply {
+            datePicker.minDate = today.timeInMillis
+        }.show()
+    }
+
+    private fun confirmRemoveVaccineDate() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Remove next vaccination?")
+            .setMessage("The date and its reminder will be removed. Your health records are not affected.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Remove") { _, _ -> saveVaccineDate("") }
+            .show()
+    }
+
+    /** Saves the date (empty = none) and keeps the 9:00 AM reminder in sync. */
+    private fun saveVaccineDate(date: String) {
+        runInBackground({
+            val saved = database.updatePetVaccineDate(petId, date)
+            if (saved) {
+                VaccineReminder.cancel(this, petId)
+                val remind = database.getPetById(petId)?.getAsInteger("reminder_enabled") == 1
+                if (date.isNotBlank() && remind) VaccineReminder.schedule(this, petId, petName, date)
+            }
+            saved
+        }) { saved ->
+            showMessage(
+                when {
+                    !saved -> "Couldn't update the vaccination date."
+                    date.isBlank() -> "Next vaccination removed"
+                    else -> "Next vaccination set to ${displayDate(date)}"
+                }
+            )
+            if (saved) loadProfile()
+        }
+    }
+
+    private fun showAddHistoryDialog(preselectType: String? = null) {
         val form = LayoutInflater.from(this).inflate(R.layout.dialog_health_record, null)
         val typeGroup = form.findViewById<ChipGroup>(R.id.chipGroupRecordType)
         val dateLayout = form.findViewById<TextInputLayout>(R.id.layoutRecordDate)
         val dateInput = form.findViewById<TextInputEditText>(R.id.inputRecordDate)
         val notesInput = form.findViewById<TextInputEditText>(R.id.inputRecordNotes)
+        val nextDueLayout = form.findViewById<TextInputLayout>(R.id.layoutRecordNextDue)
+        val nextDueInput = form.findViewById<TextInputEditText>(R.id.inputRecordNextDue)
 
         RECORD_TYPES.forEachIndexed { index, type ->
             typeGroup.addView(Chip(this).apply {
@@ -417,7 +481,7 @@ class PetDetailsActivity : AppCompatActivity() {
                 chipBackgroundColor = ContextCompat.getColorStateList(this@PetDetailsActivity, R.color.chip_selectable_bg)
                 chipStrokeColor = ContextCompat.getColorStateList(this@PetDetailsActivity, R.color.chip_selectable_stroke)
                 chipStrokeWidth = resources.displayMetrics.density
-                if (index == 0) isChecked = true
+                if (type == (preselectType ?: RECORD_TYPES.first())) isChecked = true
             })
         }
 
@@ -434,6 +498,26 @@ class PetDetailsActivity : AppCompatActivity() {
         dateInput.setOnClickListener(openPicker)
         dateLayout.setEndIconOnClickListener(openPicker)
 
+        // Vaccinations can set the next due date (tomorrow or later).
+        var nextDue: Calendar? = null
+        val openNextDuePicker = View.OnClickListener {
+            val initial = nextDue ?: Calendar.getInstance().apply { add(Calendar.YEAR, 1) }
+            DatePickerDialog(this, { _, y, m, d ->
+                nextDue = Calendar.getInstance().apply { set(y, m, d) }
+                nextDueInput.setText(SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(nextDue!!.time))
+            }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).apply {
+                datePicker.minDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, 1) }.timeInMillis
+            }.show()
+        }
+        nextDueInput.setOnClickListener(openNextDuePicker)
+        nextDueLayout.setEndIconOnClickListener(openNextDuePicker)
+        fun updateNextDueVisibility() {
+            val type = typeGroup.findViewById<Chip>(typeGroup.checkedChipId)?.text?.toString()
+            nextDueLayout.visibility = if (type == RECORD_TYPES.first()) View.VISIBLE else View.GONE
+        }
+        typeGroup.setOnCheckedStateChangeListener { _, _ -> updateNextDueVisibility() }
+        updateNextDueVisibility()
+
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Add health record")
             .setView(form)
@@ -442,16 +526,27 @@ class PetDetailsActivity : AppCompatActivity() {
             .show()
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            if (picked.after(Calendar.getInstance())) {
-                dateLayout.error = "Date can't be in the future"
-                return@setOnClickListener
-            }
             val type = typeGroup.findViewById<Chip>(typeGroup.checkedChipId)?.text?.toString() ?: RECORD_TYPES.first()
             val date = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(picked.time)
             val notes = notesInput.text?.toString()?.trim().orEmpty()
+            val nextDueDate = nextDue?.takeIf { nextDueLayout.visibility == View.VISIBLE }
+                ?.let { SimpleDateFormat("dd/MM/yyyy", Locale.US).format(it.time) }
             dialog.dismiss()
-            runInBackground({ database.saveHealthcareRecord(petId, type, date, notes) }) { saved ->
-                showMessage(if (saved) "$type record added" else "Couldn't save record.")
+            runInBackground({
+                val saved = database.saveHealthcareRecord(petId, type, date, notes)
+                if (saved && nextDueDate != null && database.updatePetVaccineDate(petId, nextDueDate)) {
+                    val remind = database.getPetById(petId)?.getAsInteger("reminder_enabled") == 1
+                    if (remind) VaccineReminder.schedule(this, petId, petName, nextDueDate)
+                }
+                saved
+            }) { saved ->
+                showMessage(
+                    when {
+                        !saved -> "Couldn't save record."
+                        nextDueDate != null -> "$type record added · next due ${displayDate(nextDueDate)}"
+                        else -> "$type record added"
+                    }
+                )
                 if (saved) loadProfile()
             }
         }

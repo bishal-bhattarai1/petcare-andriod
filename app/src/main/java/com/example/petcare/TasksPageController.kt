@@ -66,20 +66,6 @@ class TasksPageController(
         render()
     }
 
-    fun showResetConfirmation() {
-        MaterialAlertDialogBuilder(activity)
-            .setTitle("Reset Checklist")
-            .setMessage("Shake detected! Would you like to reset all of today's completed routines for a fresh start?")
-            .setPositiveButton("Reset Now") { _, _ ->
-                if (database.resetDailyTasks()) {
-                    render()
-                    Toast.makeText(activity, "Daily routines reset! ☀️", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Not now", null)
-            .show()
-    }
-
     private fun setupHeaderAndDate() {
         page.findViewById<View>(R.id.textCurrentDate).setOnClickListener {
             DatePickerDialog(activity, { _, y, m, d ->
@@ -252,19 +238,15 @@ class TasksPageController(
         }
     }
 
-    private fun toggleCompletion(task: CareTask) {
-        if (isSelectedInFuture()) {
-            Toast.makeText(activity, "You can't complete tasks for a future day", Toast.LENGTH_SHORT).show()
-            render()
-            return
+    /** Marks a routine done for the selected day. Done is final and time-gated ([CompletionRules]). */
+    private fun completeTask(task: CareTask) {
+        val reason = CompletionRules.blockReason(task, selectedDateKey())
+        val message = when {
+            reason != null -> reason
+            database.updateTaskCompletion(task.id, true, selectedDateKey()) -> "${task.description.ifBlank { "Routine" }} completed"
+            else -> "Could not update task"
         }
-        val newStatus = !task.isCompleted
-        if (database.updateTaskCompletion(task.id, newStatus, selectedDateKey())) {
-            val msg = if (newStatus) "${task.description} completed!" else "${task.description} re-opened"
-            Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(activity, "Could not update task", Toast.LENGTH_SHORT).show()
-        }
+        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
         render()
     }
 
@@ -292,7 +274,7 @@ class TasksPageController(
         val rv = page.findViewById<RecyclerView>(R.id.recyclerViewTasks)
         val adapter = TaskAdapter(
             emptyList(),
-            onComplete = ::toggleCompletion,
+            onComplete = ::completeTask,
             onDelete = ::confirmDelete,
             onClick = ::openChecklist,
             onEdit = ::showEditTaskDialog
@@ -310,7 +292,7 @@ class TasksPageController(
                 val task = adapter.tasks.getOrNull(position) ?: return
                 // Snap the row back; render() reflects the real outcome.
                 adapter.notifyItemChanged(position)
-                if (direction == ItemTouchHelper.RIGHT) toggleCompletion(task) else confirmDelete(task)
+                if (direction == ItemTouchHelper.RIGHT) completeTask(task) else confirmDelete(task)
             }
 
             override fun onChildDraw(

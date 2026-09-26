@@ -49,6 +49,30 @@
             android:textColor="@color/app_text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Only for vaccinations: updates the pet's "Next vaccination" -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutRecordNextDue"
+        style="@style/Widget.PetCare.TextInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="Next vaccination due (optional)"
+        android:visibility="gone"
+        app:endIconDrawable="@drawable/ic_calendar"
+        app:endIconMode="custom"
+        app:endIconTint="@color/app_text_secondary"
+        app:helperText="Updates the pet's profile and reminder">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputRecordNextDue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:cursorVisible="false"
+            android:focusable="false"
+            android:inputType="none"
+            android:textColor="@color/app_text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"

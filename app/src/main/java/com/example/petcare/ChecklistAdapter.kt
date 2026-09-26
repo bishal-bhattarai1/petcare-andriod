@@ -104,8 +104,20 @@ class ChecklistAdapter(
             toggleIcon.background = if (done) doneCircle else openCircle
             toggleIcon.setImageResource(if (done) R.drawable.ic_status_check else 0)
             toggleIcon.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.md_on_primary))
-            toggle.contentDescription = if (done) "Mark $taskTitle as not done" else "Mark $taskTitle as done"
-            toggle.setOnClickListener { onToggleComplete(task, it) }
+            // Done is final; before its time the circle is dimmed and explains why on tap.
+            val timeReached = CompletionRules.isTimeReached(task.scheduledTime)
+            toggle.alpha = if (done || timeReached) 1f else 0.4f
+            toggle.contentDescription = when {
+                done -> "$taskTitle is done"
+                timeReached -> "Mark $taskTitle as done"
+                else -> "$taskTitle, available from ${task.scheduledTime}"
+            }
+            if (done) {
+                toggle.setOnClickListener(null)
+                toggle.isClickable = false
+            } else {
+                toggle.setOnClickListener { onToggleComplete(task, it) }
+            }
 
             val (categoryBg, categoryFg) = if (done) {
                 R.color.md_surface_container_high to R.color.md_on_surface_variant
@@ -169,7 +181,7 @@ class ChecklistAdapter(
 
         private fun showMenu(anchor: View, task: CareTask) {
             PopupMenu(ctx, anchor).apply {
-                menu.add(0, MENU_TOGGLE, 0, if (task.isCompleted) "Mark as not done" else "Mark as done")
+                if (!task.isCompleted) menu.add(0, MENU_TOGGLE, 0, "Mark as done")
                 if (!task.isCompleted) menu.add(0, MENU_EDIT, 1, "Edit routine")
                 menu.add(0, MENU_CALENDAR, 2, "Add to calendar")
                 menu.add(0, MENU_DELETE, 3, "Delete")

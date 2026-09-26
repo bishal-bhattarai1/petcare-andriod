@@ -355,6 +355,7 @@
 
                     <EditText
                         android:id="@+id/loginEmailInput"
+                        android:autofillHints="emailAddress"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_toEndOf="@id/iconLoginEmail"
@@ -395,6 +396,7 @@
 
                     <EditText
                         android:id="@+id/loginPasswordInput"
+                        android:autofillHints="password"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_toStartOf="@id/loginPasswordEye"
@@ -709,6 +711,7 @@
 
                     <EditText
                         android:id="@+id/signUpNameInput"
+                        android:importantForAutofill="no"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_toEndOf="@id/iconSignUpName"
@@ -749,6 +752,7 @@
 
                     <EditText
                         android:id="@+id/signUpEmailInput"
+                        android:importantForAutofill="no"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_toEndOf="@id/iconSignUpEmail"
@@ -789,6 +793,7 @@
 
                     <EditText
                         android:id="@+id/signUpPasswordInput"
+                        android:autofillHints="newPassword"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_toStartOf="@id/signUpPasswordEye"
@@ -905,6 +910,7 @@
 
                     <EditText
                         android:id="@+id/signUpConfirmPasswordInput"
+                        android:autofillHints="newPassword"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_toStartOf="@id/signUpConfirmPasswordEye"

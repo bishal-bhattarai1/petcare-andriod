@@ -58,8 +58,6 @@ class DashboardActivity : AppCompatActivity() {
 
     private var expensesPage: ExpensesPageController? = null
 
-    private lateinit var sensorManager: android.hardware.SensorManager
-    private var shakeDetector: ShakeDetector? = null
 
     private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -79,11 +77,6 @@ class DashboardActivity : AppCompatActivity() {
         contentContainer = findViewById(R.id.tabContentContainer)
         hostFab = findViewById(R.id.fabAdd)
         tabPages[MainTab.HOME] = findViewById(R.id.dashboardScroll)
-
-        sensorManager = getSystemService(android.content.Context.SENSOR_SERVICE) as android.hardware.SensorManager
-        shakeDetector = ShakeDetector {
-            showResetConfirmation()
-        }
 
         updateStatusBarIcons()
 
@@ -106,34 +99,13 @@ class DashboardActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val accelerometer = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
-        sensorManager.registerListener(shakeDetector, accelerometer, android.hardware.SensorManager.SENSOR_DELAY_UI)
         refreshCurrentTab()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(shakeDetector)
     }
 
     override fun onDestroy() {
         homePage?.release()
         expensesPage?.release()
         super.onDestroy()
-    }
-
-    private fun showResetConfirmation() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Reset Checklist")
-            .setMessage("Shake detected! Would you like to reset all of today's completed routines for a fresh start?")
-            .setPositiveButton("Reset Now") { _, _ ->
-                if (database.resetDailyTasks()) {
-                    refreshCurrentTab()
-                    Toast.makeText(this, "Daily routines reset! ☀️", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Not now", null)
-            .show()
     }
 
     private fun setupHomePage() {
@@ -342,6 +314,10 @@ class DashboardActivity : AppCompatActivity() {
     private fun setupProfileActions(page: View) {
         page.findViewById<View>(R.id.cardProfileAvatar).setOnClickListener {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+
+        page.findViewById<View>(R.id.layoutPetHistory).setOnClickListener {
+            startActivity(Intent(this, PetHistoryActivity::class.java))
         }
 
         page.findViewById<View>(R.id.layoutPersonalInfo).setOnClickListener {

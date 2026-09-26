@@ -17,8 +17,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class TasksActivity : AppCompatActivity() {
-    private lateinit var sensorManager: android.hardware.SensorManager
-    private var shakeDetector: ShakeDetector? = null
     private lateinit var tasksPage: TasksPageController
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,11 +30,6 @@ class TasksActivity : AppCompatActivity() {
             database = AuthDatabaseHelper(this),
             sessionManager = SessionManager(this)
         )
-
-        sensorManager = getSystemService(android.content.Context.SENSOR_SERVICE) as android.hardware.SensorManager
-        shakeDetector = ShakeDetector {
-            tasksPage.showResetConfirmation()
-        }
 
         updateStatusBarIcons()
         updateBottomNavigationUI()
@@ -56,14 +49,7 @@ class TasksActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val accelerometer = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
-        sensorManager.registerListener(shakeDetector, accelerometer, android.hardware.SensorManager.SENSOR_DELAY_UI)
         tasksPage.refresh()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(shakeDetector)
     }
 
     private fun setupBottomNavigation() {

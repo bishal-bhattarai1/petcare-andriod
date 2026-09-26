@@ -1,10 +1,7 @@
 package com.example.petcare
 
-import android.app.AlarmManager
 import android.app.DatePickerDialog
-import android.app.PendingIntent
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -298,13 +295,17 @@ class AddEditPetActivity : AppCompatActivity() {
         findViewById<Button>(R.id.buttonSavePet).setOnClickListener { save() }
     }
 
+    /** The next due date can't be in the past, so a past "last vaccinated" date can't be picked by mistake. */
     private fun showVaccineDatePicker() {
+        val today = startOfToday()
         val calendar = Calendar.getInstance()
-        parseExpenseDate(inputVaccineDate.text.toString())?.let { calendar.time = it }
+        parseExpenseDate(inputVaccineDate.text.toString())?.takeIf { !it.before(today.time) }?.let { calendar.time = it }
         DatePickerDialog(this, { _, year, month, day ->
             calendar.set(year, month, day)
             inputVaccineDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.US).format(calendar.time))
+            findViewById<TextInputLayout>(R.id.layoutVaccineDate).error = null
         }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).apply {
+            datePicker.minDate = today.timeInMillis
             if (inputVaccineDate.text.isNotBlank()) {
                 setButton(DatePickerDialog.BUTTON_NEUTRAL, "Clear") { _, _ -> inputVaccineDate.setText("") }
             }
@@ -329,6 +330,11 @@ class AddEditPetActivity : AppCompatActivity() {
         }
         if (weightText.isNotEmpty() && (weight == null || weight <= 0 || weight > MAX_WEIGHT_KG)) {
             findViewById<TextInputLayout>(R.id.layoutWeight).error = "Enter a weight between 0 and $MAX_WEIGHT_KG kg"
+            valid = false
+        }
+        val vaccineDue = parseExpenseDate(inputVaccineDate.text.toString().trim())
+        if (vaccineDue != null && vaccineDue.before(startOfToday().time)) {
+            findViewById<TextInputLayout>(R.id.layoutVaccineDate).error = "This date has passed. Pick the next due date or clear it."
             valid = false
         }
         if (!valid) {
@@ -364,9 +370,9 @@ class AddEditPetActivity : AppCompatActivity() {
 
         database.savePetPhotos(petId, selectedPhotos)
         if (switchReminder.isChecked && vaccineDate.isNotBlank()) {
-            scheduleVaccinationReminder(petId, name, vaccineDate)
+            VaccineReminder.schedule(this, petId, name, vaccineDate)
         } else {
-            cancelVaccinationReminder(petId)
+            VaccineReminder.cancel(this, petId)
         }
 
         hasUnsavedChanges = false
@@ -465,46 +471,8 @@ class AddEditPetActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 
-    private fun reminderIntent(petId: Long, petName: String? = null): PendingIntent? {
-        val intent = Intent(this, ReminderReceiver::class.java).apply {
-            putExtra("PET_ID", petId)
-            petName?.let { putExtra("PET_NAME", it) }
-            putExtra("TYPE", "VACCINE")
-        }
-        // petId + 10000 keeps vaccine alarms apart from task alarms.
-        return PendingIntent.getBroadcast(
-            this, petId.toInt() + 10000, intent,
-            PendingIntent.FLAG_IMMUTABLE or if (petName != null) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
-        )
-    }
-
-    private fun scheduleVaccinationReminder(petId: Long, petName: String, date: String) {
-        val parsed = parseExpenseDate(date) ?: return
-        val calendar = Calendar.getInstance().apply {
-            time = parsed
-            set(Calendar.HOUR_OF_DAY, 9)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-        }
-        if (calendar.before(Calendar.getInstance())) return
-
-        val pendingIntent = reminderIntent(petId, petName) ?: return
-        val alarmManager = getSystemService(AlarmManager::class.java) ?: return
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-            } else {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-            }
-        } catch (_: SecurityException) {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-        }
-    }
-
-    private fun cancelVaccinationReminder(petId: Long) {
-        val pending = reminderIntent(petId) ?: return
-        getSystemService(AlarmManager::class.java)?.cancel(pending)
-        pending.cancel()
+    private fun startOfToday(): Calendar = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }
 
     private fun formatNumber(value: Double): String =

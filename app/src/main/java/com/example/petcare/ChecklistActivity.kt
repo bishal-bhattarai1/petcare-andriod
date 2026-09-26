@@ -99,7 +99,7 @@ class ChecklistActivity : AppCompatActivity() {
         updateHeaderTitle()
 
         adapter = ChecklistAdapter(
-            onToggleComplete = ::toggleCompletion,
+            onToggleComplete = ::completeTask,
             onWeeklyDayToggled = ::toggleWeeklyDay,
             onEdit = ::showEditDialog,
             onDelete = ::showDeleteTaskConfirmation,
@@ -261,28 +261,36 @@ class ChecklistActivity : AppCompatActivity() {
 
     // region Actions
 
-    private fun toggleCompletion(task: CareTask, source: View) {
-        val completed = !task.isCompleted
-        if (completed) source.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        updateLocalTask(task.id) { it.copy(isCompleted = completed) }
+    /** Marks a routine done. Done is final, and only allowed once its time has come ([CompletionRules]). */
+    private fun completeTask(task: CareTask, source: View) {
+        CompletionRules.blockReason(task)?.let {
+            showMessage(it)
+            return
+        }
+        source.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        updateLocalTask(task.id) { it.copy(isCompleted = true) }
 
-        runInBackground({ database.updateTaskCompletion(task.id, completed) }) { saved ->
-            if (!saved) {
-                updateLocalTask(task.id) { it.copy(isCompleted = task.isCompleted) }
+        runInBackground({ database.updateTaskCompletion(task.id, true) }) { saved ->
+            if (saved) {
+                showMessage("\"${task.description.ifBlank { "Routine" }}\" done")
+            } else {
+                updateLocalTask(task.id) { it.copy(isCompleted = false) }
                 showMessage("Couldn't update routine. Please try again.")
-                return@runInBackground
-            }
-            val name = task.description.ifBlank { "Routine" }
-            showMessage(if (completed) "\"$name\" done" else "\"$name\" marked as not done") {
-                setAction("Undo") { toggleCompletion(task.copy(isCompleted = completed), source) }
             }
         }
     }
 
     private fun toggleWeeklyDay(task: CareTask, day: String, checked: Boolean) {
         val current = allTasks.firstOrNull { it.id == task.id } ?: return
+        val blocked = if (!checked) "${ChecklistAdapter.fullDayName(day)} is already done. It can't be undone."
+        else CompletionRules.weekDayBlockReason(day, current)
+        if (blocked != null) {
+            showMessage(blocked)
+            applyFilters() // The chip toggled itself on tap; re-render to restore it.
+            return
+        }
         val days = current.completedWeekDays.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toMutableSet()
-        if (checked) days.add(day) else days.remove(day)
+        days.add(day)
         val serialized = days.joinToString(",")
         updateLocalTask(task.id) { it.copy(completedWeekDays = serialized) }
 

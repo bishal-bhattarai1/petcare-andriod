@@ -24,11 +24,15 @@ object InfoContent {
         ),
         Section(
             "How do I mark a routine as done?",
-            "Tap the circle next to it in the checklist, or swipe the task right on the Tasks page. Tap again (or use Undo) to mark it as not done."
+            "Tap the circle next to it in the checklist, or swipe the task right on the Tasks page. A routine unlocks at its scheduled time: a 2:00 PM walk can be marked done from 2:00 PM. Routines without a time can be done any time that day."
+        ),
+        Section(
+            "Can I undo a completed routine?",
+            "No. Once a routine is marked done it stays done, so your care history is reliable. Double-check before tapping."
         ),
         Section(
             "Why can't I edit a completed routine?",
-            "Completed routines are locked so your history stays accurate. Mark it as not done first, then edit it."
+            "Completed routines are locked so your history stays accurate. You can still edit it before it's done, or delete it."
         ),
         Section(
             "How do I track and download expenses?",
@@ -37,10 +41,6 @@ object InfoContent {
         Section(
             "How do reminders work?",
             "Turn on notifications in Profile. For vaccinations, add a date on the pet's profile and keep the reminder switch on; you'll be notified at 9:00 AM that day."
-        ),
-        Section(
-            "What does shaking my phone do?",
-            "On the main screens, shaking the phone offers to reset today's completed routines. Nothing changes unless you confirm."
         ),
         Section(
             "How do I delete a pet?",
