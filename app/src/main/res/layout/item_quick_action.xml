@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingVertical="4dp">
+
+    <FrameLayout
+        android:id="@+id/quickActionIconBg"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_circle"
+        android:backgroundTint="@color/md_secondary_container">
+
+        <ImageView
+            android:id="@+id/quickActionIcon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            app:tint="@color/md_on_secondary_container"
+            tools:ignore="ContentDescription"
+            tools:src="@drawable/ic_paw" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/quickActionLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="@color/app_text_primary"
+        android:textSize="12sp"
+        tools:text="Add pet" />
+</LinearLayout>

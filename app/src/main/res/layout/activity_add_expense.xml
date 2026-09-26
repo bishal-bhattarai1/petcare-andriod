@@ -253,6 +253,6 @@
             android:textColor="@color/white"
             android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="8dp" />
+            app:cornerRadius="28dp" />
     </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

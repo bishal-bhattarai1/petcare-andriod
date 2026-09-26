@@ -103,7 +103,7 @@ class LocationsActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = 12.dp() }
-            radius = 14.dp().toFloat()
+            radius = 20.dp().toFloat()
             cardElevation = 0f
             strokeWidth = 1.dp()
             strokeColor = ContextCompat.getColor(this@LocationsActivity, R.color.app_divider)
@@ -119,7 +119,7 @@ class LocationsActivity : AppCompatActivity() {
             text = loc.name
             setTextColor(ContextCompat.getColor(this@LocationsActivity, R.color.app_text_primary))
             textSize = 16f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = context.figtree(android.graphics.Typeface.BOLD)
         }
         container.addView(nameText)
 
@@ -151,7 +151,7 @@ class LocationsActivity : AppCompatActivity() {
             text = "Locate on Map"
             setTextColor(ContextCompat.getColor(this@LocationsActivity, R.color.white))
             backgroundTintList = ContextCompat.getColorStateList(this@LocationsActivity, R.color.black)
-            cornerRadius = 8.dp()
+            cornerRadius = 28.dp()
             layoutParams = LinearLayout.LayoutParams(
                 0,
                 44.dp(),
@@ -174,7 +174,7 @@ class LocationsActivity : AppCompatActivity() {
             text = "Delete"
             setTextColor(ContextCompat.getColor(this@LocationsActivity, R.color.app_accent_red))
             strokeColor = ContextCompat.getColorStateList(this@LocationsActivity, R.color.app_divider)
-            cornerRadius = 8.dp()
+            cornerRadius = 28.dp()
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 44.dp()
@@ -237,7 +237,7 @@ class LocationsActivity : AppCompatActivity() {
             text = if (selectedLat != 0.0 && selectedLng != 0.0) "✓ Pin Selected on Map" else "Set Location Pin on Map"
             setTextColor(ContextCompat.getColor(this@LocationsActivity, R.color.black))
             strokeColor = ContextCompat.getColorStateList(this@LocationsActivity, R.color.app_divider)
-            cornerRadius = 8.dp()
+            cornerRadius = 28.dp()
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 48.dp()

@@ -1,6 +1,7 @@
 package com.example.petcare
 
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -17,17 +18,44 @@ import com.google.android.material.card.MaterialCardView
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 class NotificationsActivity : AppCompatActivity() {
     private lateinit var database: AuthDatabaseHelper
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+
+    private lateinit var todayLayout: LinearLayout
+    private lateinit var healthcareLayout: LinearLayout
+    private lateinit var yesterdayLayout: LinearLayout
+    private lateinit var emptyToday: TextView
+    private lateinit var emptyHealthcare: TextView
+    private lateinit var emptyYesterday: TextView
+
+    // Resolved once instead of per row.
+    private val colorTextPrimary by lazy { ContextCompat.getColor(this, R.color.app_text_primary) }
+    private val colorTextSecondary by lazy { ContextCompat.getColor(this, R.color.app_text_secondary) }
+    private val colorGreen by lazy { ContextCompat.getColor(this, R.color.status_green) }
+    private val colorRed by lazy { ContextCompat.getColor(this, R.color.app_accent_red) }
+    private val colorCard by lazy { ContextCompat.getColor(this, R.color.card_bg) }
+    private val colorWhite by lazy { ContextCompat.getColor(this, R.color.white) }
+    private val fontBold by lazy { figtree(Typeface.BOLD) }
+    private val fontItalic by lazy { figtree(Typeface.ITALIC) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_notifications)
         database = AuthDatabaseHelper(this)
+
+        todayLayout = findViewById(R.id.layoutTodayReminders)
+        healthcareLayout = findViewById(R.id.layoutHealthcareRecords)
+        yesterdayLayout = findViewById(R.id.layoutYesterdayLog)
+        emptyToday = findViewById(R.id.textEmptyToday)
+        emptyHealthcare = findViewById(R.id.textEmptyHealthcare)
+        emptyYesterday = findViewById(R.id.textEmptyYesterday)
 
         updateStatusBarIcons()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_notifications)) { v, insets ->
@@ -41,7 +69,12 @@ class NotificationsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        renderReminders()
+        loadReminders()
+    }
+
+    override fun onDestroy() {
+        executor.shutdownNow()
+        super.onDestroy()
     }
 
     private fun setupBottomNavigation() {
@@ -59,41 +92,51 @@ class NotificationsActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderReminders() {
-        val allTasks = database.getCareTasks()
-        val activeTasks = allTasks
+    /** Queries the database and prepares reminders off the main thread, then renders on it. */
+    private fun loadReminders() {
+        if (executor.isShutdown) return
+        executor.execute {
+            val allTasks = database.getCareTasks()
+            val medicalHistory = database.getAllHealthcareHistory()
+            val reminders = buildReminders(allTasks)
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) render(reminders, medicalHistory, allTasks)
+            }
+        }
+    }
+
+    private fun buildReminders(allTasks: List<CareTask>): List<Reminder> {
+        // Parse each scheduled time exactly once, against a single "now".
+        val formatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+        val now = Calendar.getInstance()
+        return allTasks
             .filter { !it.isCompleted }
-            .map { task -> task to task.reminderState() }
+            .map { task ->
+                val minutes = task.minutesUntilScheduled(formatter, now)
+                Reminder(task, minutes, reminderState(minutes))
+            }
             .sortedWith(
-                compareBy<Pair<CareTask, ReminderState>> { it.second.priority }
-                    .thenBy { it.first.minutesUntilScheduled() ?: Int.MAX_VALUE }
+                compareBy<Reminder> { it.state.priority }
+                    .thenBy { it.minutesUntil ?: Int.MAX_VALUE }
             )
+    }
 
-        val todayLayout = findViewById<LinearLayout>(R.id.layoutTodayReminders)
+    private fun render(
+        reminders: List<Reminder>,
+        medicalHistory: List<HealthcareRecord>,
+        allTasks: List<CareTask>
+    ) {
         todayLayout.removeAllViews()
-        activeTasks.forEach { (task, state) ->
-            todayLayout.addView(createReminderRow(task, state))
-        }
-        findViewById<TextView>(R.id.textEmptyToday).visibility =
-            if (activeTasks.isEmpty()) View.VISIBLE else View.GONE
+        reminders.forEach { todayLayout.addView(createReminderRow(it)) }
+        emptyToday.visibility = if (reminders.isEmpty()) View.VISIBLE else View.GONE
 
-        // Healthcare History
-        val medicalHistory = database.getAllHealthcareHistory()
-        val healthcareLayout = findViewById<LinearLayout>(R.id.layoutHealthcareRecords)
         healthcareLayout.removeAllViews()
-        medicalHistory.forEach { record ->
-            healthcareLayout.addView(createHealthcareHistoryRow(record))
-        }
-        findViewById<TextView>(R.id.textEmptyHealthcare).visibility =
-            if (medicalHistory.isEmpty()) View.VISIBLE else View.GONE
+        medicalHistory.forEach { healthcareLayout.addView(createHealthcareHistoryRow(it)) }
+        emptyHealthcare.visibility = if (medicalHistory.isEmpty()) View.VISIBLE else View.GONE
 
-        val yesterdayLayout = findViewById<LinearLayout>(R.id.layoutYesterdayLog)
         yesterdayLayout.removeAllViews()
-        allTasks.forEach { task ->
-            yesterdayLayout.addView(createHistoryRow(task))
-        }
-        findViewById<TextView>(R.id.textEmptyYesterday).visibility =
-            if (allTasks.isEmpty()) View.VISIBLE else View.GONE
+        allTasks.forEach { yesterdayLayout.addView(createHistoryRow(it)) }
+        emptyYesterday.visibility = if (allTasks.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun createHealthcareHistoryRow(record: HealthcareRecord): View {
@@ -105,7 +148,7 @@ class NotificationsActivity : AppCompatActivity() {
 
         row.addView(ImageView(this).apply {
             setImageResource(android.R.drawable.checkbox_on_background)
-            setColorFilter(ContextCompat.getColor(this@NotificationsActivity, R.color.status_green))
+            setColorFilter(colorGreen)
             layoutParams = LinearLayout.LayoutParams(24.dp(), 24.dp())
         })
 
@@ -116,13 +159,13 @@ class NotificationsActivity : AppCompatActivity() {
         }
         content.addView(TextView(this).apply {
             text = "${record.petName} • ${record.type}"
-            setTextColor(ContextCompat.getColor(this@NotificationsActivity, R.color.app_text_primary))
+            setTextColor(colorTextPrimary)
             textSize = 14f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = fontBold
         })
         content.addView(TextView(this).apply {
             text = record.date
-            setTextColor(ContextCompat.getColor(this@NotificationsActivity, R.color.app_text_secondary))
+            setTextColor(colorTextSecondary)
             textSize = 12f
             setPadding(0, 3.dp(), 0, 0)
         })
@@ -131,31 +174,27 @@ class NotificationsActivity : AppCompatActivity() {
         if (record.notes.isNotBlank()) {
             row.addView(TextView(this).apply {
                 text = "Notes"
-                setTextColor(ContextCompat.getColor(this@NotificationsActivity, R.color.app_text_secondary))
+                setTextColor(colorTextSecondary)
                 textSize = 11f
-                setTypeface(null, android.graphics.Typeface.ITALIC)
+                typeface = fontItalic
             })
         }
 
         return row
     }
 
-    private fun createReminderRow(task: CareTask, state: ReminderState): View {
-        val isOverdue = state == ReminderState.OVERDUE
+    private fun createReminderRow(reminder: Reminder): View {
+        val task = reminder.task
+        val isOverdue = reminder.state == ReminderState.OVERDUE
         val card = MaterialCardView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = 10.dp() }
-            radius = 12.dp().toFloat()
+            radius = 20.dp().toFloat()
             cardElevation = 0f
             strokeWidth = 0
-            setCardBackgroundColor(
-                ContextCompat.getColor(
-                    this@NotificationsActivity,
-                    if (isOverdue) R.color.app_accent_red else R.color.card_bg
-                )
-            )
+            setCardBackgroundColor(if (isOverdue) colorRed else colorCard)
         }
 
         val row = LinearLayout(this).apply {
@@ -169,16 +208,16 @@ class NotificationsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        val titleColor = ContextCompat.getColor(this, if (isOverdue) R.color.white else R.color.app_text_primary)
-        val subColor = ContextCompat.getColor(this, if (isOverdue) R.color.white else R.color.app_text_secondary)
+        val titleColor = if (isOverdue) colorWhite else colorTextPrimary
+        val subColor = if (isOverdue) colorWhite else colorTextSecondary
         content.addView(TextView(this).apply {
             text = "${task.petName}'s ${task.description.ifBlank { "care task" }}"
             setTextColor(titleColor)
             textSize = 15f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = fontBold
         })
         content.addView(TextView(this).apply {
-            text = state.label(task)
+            text = reminder.label()
             setTextColor(subColor)
             textSize = 13f
             setPadding(0, 4.dp(), 0, 0)
@@ -190,7 +229,7 @@ class NotificationsActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setTextColor(titleColor)
             textSize = 22f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = fontBold
             layoutParams = LinearLayout.LayoutParams(40.dp(), 40.dp())
         })
 
@@ -207,14 +246,10 @@ class NotificationsActivity : AppCompatActivity() {
             setOnClickListener { openChecklist(task) }
         }
 
+        val statusColor = if (task.isCompleted) colorGreen else colorTextSecondary
         row.addView(ImageView(this).apply {
             setImageResource(if (task.isCompleted) android.R.drawable.checkbox_on_background else android.R.drawable.presence_invisible)
-            setColorFilter(
-                ContextCompat.getColor(
-                    this@NotificationsActivity,
-                    if (task.isCompleted) R.color.status_green else R.color.app_text_secondary
-                )
-            )
+            setColorFilter(statusColor)
             layoutParams = LinearLayout.LayoutParams(24.dp(), 24.dp())
         })
 
@@ -225,13 +260,13 @@ class NotificationsActivity : AppCompatActivity() {
         }
         content.addView(TextView(this).apply {
             text = task.description.ifBlank { "Care task" }
-            setTextColor(ContextCompat.getColor(this@NotificationsActivity, R.color.app_text_primary))
+            setTextColor(colorTextPrimary)
             textSize = 14f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = fontBold
         })
         content.addView(TextView(this).apply {
             text = "${task.petName} - ${task.scheduledTime.ifBlank { "No time" }}"
-            setTextColor(ContextCompat.getColor(this@NotificationsActivity, R.color.app_text_secondary))
+            setTextColor(colorTextSecondary)
             textSize = 12f
             setPadding(0, 3.dp(), 0, 0)
         })
@@ -239,14 +274,9 @@ class NotificationsActivity : AppCompatActivity() {
 
         row.addView(TextView(this).apply {
             text = if (task.isCompleted) "Done" else "Missed"
-            setTextColor(
-                ContextCompat.getColor(
-                    this@NotificationsActivity,
-                    if (task.isCompleted) R.color.status_green else R.color.app_text_secondary
-                )
-            )
+            setTextColor(statusColor)
             textSize = 12f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            typeface = fontBold
         })
 
         return row
@@ -260,34 +290,27 @@ class NotificationsActivity : AppCompatActivity() {
         )
     }
 
-    private fun CareTask.reminderState(): ReminderState {
-        val minutes = minutesUntilScheduled() ?: return ReminderState.SCHEDULED
-        return when {
-            minutes < 0 -> ReminderState.OVERDUE
-            minutes <= 60 -> ReminderState.UPCOMING
-            else -> ReminderState.SCHEDULED
-        }
+    private fun reminderState(minutes: Int?): ReminderState = when {
+        minutes == null -> ReminderState.SCHEDULED
+        minutes < 0 -> ReminderState.OVERDUE
+        minutes <= 60 -> ReminderState.UPCOMING
+        else -> ReminderState.SCHEDULED
     }
 
-    private fun ReminderState.label(task: CareTask): String {
-        val minutes = task.minutesUntilScheduled()
-        return when (this) {
-            ReminderState.OVERDUE -> "Overdue - ${task.scheduledTime.ifBlank { "Today" }}"
-            ReminderState.UPCOMING -> "Upcoming - in ${max(minutes ?: 0, 1)} minutes"
-            ReminderState.SCHEDULED -> task.scheduledTime.ifBlank { "Scheduled later today" }
-        }
+    private fun Reminder.label(): String = when (state) {
+        ReminderState.OVERDUE -> "Overdue - ${task.scheduledTime.ifBlank { "Today" }}"
+        ReminderState.UPCOMING -> "Upcoming - in ${max(minutesUntil ?: 0, 1)} minutes"
+        ReminderState.SCHEDULED -> task.scheduledTime.ifBlank { "Scheduled later today" }
     }
 
-    private fun CareTask.minutesUntilScheduled(): Int? {
+    private fun CareTask.minutesUntilScheduled(formatter: SimpleDateFormat, now: Calendar): Int? {
         val time = scheduledTime.trim()
         if (time.isBlank()) return null
 
         return try {
-            val parsed = SimpleDateFormat("hh:mm a", Locale.getDefault()).parse(time) ?: return null
-            val now = Calendar.getInstance()
-            val scheduled = Calendar.getInstance().apply {
-                timeInMillis = now.timeInMillis
-                val parsedCalendar = Calendar.getInstance().apply { setTime(parsed) }
+            val parsed = formatter.parse(time) ?: return null
+            val parsedCalendar = Calendar.getInstance().apply { setTime(parsed) }
+            val scheduled = (now.clone() as Calendar).apply {
                 set(Calendar.HOUR_OF_DAY, parsedCalendar.get(Calendar.HOUR_OF_DAY))
                 set(Calendar.MINUTE, parsedCalendar.get(Calendar.MINUTE))
                 set(Calendar.SECOND, 0)
@@ -305,6 +328,8 @@ class NotificationsActivity : AppCompatActivity() {
         val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
+
+    private data class Reminder(val task: CareTask, val minutesUntil: Int?, val state: ReminderState)
 
     private enum class ReminderState(val priority: Int) {
         OVERDUE(0),

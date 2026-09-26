@@ -85,6 +85,15 @@ class AuthDatabaseHelper(context: Context) :
         createPhotosTable(db)
         createLocationsTable(db)
         createHealthcareTable(db)
+        createTaskCompletionsTable(db)
+    }
+
+    override fun onOpen(db: SQLiteDatabase) {
+        super.onOpen(db)
+        if (!db.isReadOnly) {
+            createTaskCompletionsTable(db)
+            syncTodayCompletionFlags(db)
+        }
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -95,7 +104,6 @@ class AuthDatabaseHelper(context: Context) :
             createPetsTable(db)
             createTasksTable(db)
             createExpensesTable(db)
-            return
         }
 
         if (oldVersion < 4) {
@@ -138,6 +146,15 @@ class AuthDatabaseHelper(context: Context) :
 
         if (oldVersion < 13) {
             ensureLocationsTableExists(db)
+        }
+
+        if (oldVersion < 14) {
+            createTaskCompletionsTable(db)
+            // Carry over anything already ticked off as completed today.
+            db.execSQL(
+                "INSERT OR IGNORE INTO task_completions (task_id, completed_date) SELECT id, ? FROM tasks WHERE is_completed = 1",
+                arrayOf<Any>(todayKey())
+            )
         }
     }
 
@@ -286,6 +303,23 @@ class AuthDatabaseHelper(context: Context) :
         }
     }
 
+    fun getUserNameByEmail(email: String): String? {
+        val cursor = readableDatabase.query(
+            TABLE_USERS,
+            arrayOf(COLUMN_NAME),
+            "$COLUMN_EMAIL = ?",
+            arrayOf(email.normalizedEmail()),
+            null,
+            null,
+            null,
+            "1"
+        )
+
+        return cursor.use {
+            if (it.moveToFirst()) it.getString(it.getColumnIndexOrThrow(COLUMN_NAME)) else null
+        }
+    }
+
     fun emailExists(email: String): Boolean {
         val cursor = readableDatabase.query(
             TABLE_USERS,
@@ -400,11 +434,13 @@ class AuthDatabaseHelper(context: Context) :
             currentUserId()?.let { put("owner_id", it) }
         }
 
-        return try {
+        val petId = try {
             writableDatabase.insert("pets", null, values)
         } catch (_: Exception) {
             -1L
         }
+        if (petId != -1L) seedDefaultTasks(petId)
+        return petId
     }
 
     fun getAllPets(): List<PetDashboardModel> {
@@ -606,11 +642,33 @@ class AuthDatabaseHelper(context: Context) :
         }
     }
 
-    fun getCareTasks(petId: Long? = null): List<CareTask> {
+    // Seeds starter routines once, when a pet is created. Running this on every read
+    // would resurrect the defaults whenever a user deleted all of a pet's tasks.
+    private fun seedDefaultTasks(petId: Long) {
+        listOf(
+            arrayOf("Morning Kibble & Wet Food", "Feeding", "7:30 AM", "1 can salmon blend", "Fresh water bowl"),
+            arrayOf("Afternoon Fur Brushing", "Grooming", "2:00 PM", "Soft slicker brush", "Balcony rug"),
+            arrayOf("Ear Drops & Multivitamin", "Health", "6:00 PM", "2 drops left ear + chewable", "Give after meal"),
+            arrayOf("Evening Laser Chase", "Activity", "8:00 PM", "20 mins indoor cardio", "Play before bedtime")
+        ).forEach { (description, category, time, supplies, notes) ->
+            saveTask(
+                petId = petId,
+                description = description,
+                expenseAmount = 0.0,
+                category = category,
+                repeatType = "Daily",
+                scheduledTime = time,
+                supplies = supplies,
+                notes = notes
+            )
+        }
+    }
+
+    fun getCareTasks(petId: Long? = null, dateKey: String = todayKey()): List<CareTask> {
         adoptOrphanPetsForCurrentUser()
         val tasks = mutableListOf<CareTask>()
         val clauses = mutableListOf<String>()
-        val args = mutableListOf<String>()
+        val args = mutableListOf(dateKey)
         petId?.let {
             clauses.add("t.pet_id = ?")
             args.add(it.toString())
@@ -630,7 +688,9 @@ class AuthDatabaseHelper(context: Context) :
                 t.category,
                 t.repeat_type,
                 t.scheduled_time,
-                t.is_completed,
+                EXISTS (
+                    SELECT 1 FROM task_completions c WHERE c.task_id = t.id AND c.completed_date = ?
+                ) AS is_completed,
                 t.week_days,
                 t.completed_week_days,
                 t.reminder_enabled,
@@ -643,7 +703,7 @@ class AuthDatabaseHelper(context: Context) :
             LEFT JOIN pets p ON p.id = t.pet_id
             LEFT JOIN pet_locations l ON l.id = t.linked_location_id
             $whereClause
-            ORDER BY t.is_completed ASC, t.id DESC
+            ORDER BY is_completed ASC, t.id DESC
             """.trimIndent(),
             args.toTypedArray()
         )
@@ -676,20 +736,30 @@ class AuthDatabaseHelper(context: Context) :
         return tasks
     }
 
-    fun updateTaskCompletion(taskId: Long, completed: Boolean): Boolean {
+    fun updateTaskCompletion(taskId: Long, completed: Boolean, dateKey: String = todayKey()): Boolean {
         if (!canAccessTask(taskId)) return false
 
-        val values = ContentValues().apply {
-            put("is_completed", if (completed) 1 else 0)
-        }
-
         return try {
-            writableDatabase.update(
-                "tasks",
-                values,
-                "id = ?",
-                arrayOf(taskId.toString())
-            ) > 0
+            val db = writableDatabase
+            if (completed) {
+                db.execSQL(
+                    "INSERT OR IGNORE INTO task_completions (task_id, completed_date) VALUES (?, ?)",
+                    arrayOf<Any>(taskId, dateKey)
+                )
+            } else {
+                db.delete(
+                    "task_completions",
+                    "task_id = ? AND completed_date = ?",
+                    arrayOf(taskId.toString(), dateKey)
+                )
+            }
+            if (dateKey == todayKey()) {
+                val values = ContentValues().apply {
+                    put("is_completed", if (completed) 1 else 0)
+                }
+                db.update("tasks", values, "id = ?", arrayOf(taskId.toString()))
+            }
+            true
         } catch (_: Exception) {
             false
         }
@@ -723,6 +793,7 @@ class AuthDatabaseHelper(context: Context) :
             put("completed_week_days", "")
         }
         return try {
+            writableDatabase.delete("task_completions", "completed_date = ?", arrayOf(todayKey()))
             writableDatabase.update("tasks", values, null, null) > 0
         } catch (_: Exception) {
             false
@@ -732,6 +803,7 @@ class AuthDatabaseHelper(context: Context) :
     fun deleteTask(taskId: Long): Boolean {
         if (!canAccessTask(taskId)) return false
         return try {
+            writableDatabase.delete("task_completions", "task_id = ?", arrayOf(taskId.toString()))
             writableDatabase.delete("tasks", "id = ?", arrayOf(taskId.toString())) > 0
         } catch (_: Exception) {
             false
@@ -740,10 +812,22 @@ class AuthDatabaseHelper(context: Context) :
 
     fun deletePet(petId: Long): Boolean {
         if (!canAccessPet(petId)) return false
+        val db = writableDatabase
+        val args = arrayOf(petId.toString())
+        db.beginTransaction()
         return try {
-            writableDatabase.delete("pets", "id = ?", arrayOf(petId.toString())) > 0
+            db.delete("task_completions", "task_id IN (SELECT id FROM tasks WHERE pet_id = ?)", args)
+            db.delete("tasks", "pet_id = ?", args)
+            db.delete("expenses", "pet_id = ?", args)
+            db.delete("pet_photos", "pet_id = ?", args)
+            db.delete("healthcare_history", "pet_id = ?", args)
+            val deleted = db.delete("pets", "id = ?", args) > 0
+            db.setTransactionSuccessful()
+            deleted
         } catch (_: Exception) {
             false
+        } finally {
+            db.endTransaction()
         }
     }
 
@@ -915,6 +999,34 @@ class AuthDatabaseHelper(context: Context) :
         )
     }
 
+    private fun createTaskCompletionsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS task_completions (
+                task_id INTEGER NOT NULL,
+                completed_date TEXT NOT NULL,
+                PRIMARY KEY (task_id, completed_date),
+                FOREIGN KEY(task_id) REFERENCES tasks(id)
+            )
+            """.trimIndent()
+        )
+    }
+
+    /** Keeps the legacy `is_completed` flag meaning "done today", so a new day starts fresh everywhere. */
+    private fun syncTodayCompletionFlags(db: SQLiteDatabase) {
+        try {
+            db.execSQL(
+                """
+                UPDATE tasks SET is_completed = CASE WHEN EXISTS (
+                    SELECT 1 FROM task_completions c WHERE c.task_id = tasks.id AND c.completed_date = ?
+                ) THEN 1 ELSE 0 END
+                """.trimIndent(),
+                arrayOf<Any>(todayKey())
+            )
+        } catch (_: Exception) {
+        }
+    }
+
     private fun createTasksTable(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -930,6 +1042,11 @@ class AuthDatabaseHelper(context: Context) :
                 delegate_enabled INTEGER DEFAULT 0,
                 is_completed INTEGER DEFAULT 0,
                 expense_amount REAL DEFAULT 0.0,
+                completed_week_days TEXT DEFAULT '',
+                reminder_enabled INTEGER DEFAULT 0,
+                required_supplies TEXT DEFAULT '',
+                task_notes TEXT DEFAULT '',
+                linked_location_id INTEGER DEFAULT -1,
                 FOREIGN KEY(pet_id) REFERENCES pets(id)
             )
             """.trimIndent()
@@ -982,7 +1099,7 @@ class AuthDatabaseHelper(context: Context) :
                 val done = it.getInt(it.getColumnIndexOrThrow("completed")) == 1
                 when {
                     cat.contains("feed") || cat.contains("food") -> if (done) isFed = true
-                    cat.contains("walk") -> if (done) isWalked = true
+                    cat.contains("walk") || cat.contains("exercise") || cat.contains("activity") -> if (done) isWalked = true
                     cat.contains("med") || cat.contains("health") -> if (done) isMedsTaken = true
                     cat.contains("groom") -> if (done) isGroomed = true
                 }
@@ -1422,12 +1539,18 @@ class AuthDatabaseHelper(context: Context) :
 
     companion object {
         private const val DATABASE_NAME = "petcare_v3.db"
-        private const val DATABASE_VERSION = 12
+        private const val DATABASE_VERSION = 14
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_NAME = "name"
         private const val COLUMN_EMAIL = "email"
         private const val COLUMN_PASSWORD_HASH = "password_hash"
         private const val COLUMN_CREATED_AT = "created_at"
+
+        /** Day key (yyyy-MM-dd) used to record per-day task completion. */
+        fun dateKey(calendar: java.util.Calendar): String =
+            java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(calendar.time)
+
+        fun todayKey(): String = dateKey(java.util.Calendar.getInstance())
     }
 }

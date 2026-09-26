@@ -1,5 +1,7 @@
 package com.example.petcare
 
+import androidx.appcompat.app.AppCompatDelegate
+
 import android.content.Context
 import android.content.SharedPreferences
 
@@ -14,6 +16,25 @@ class SessionManager(context: Context) {
         private const val KEY_DEFAULT_DELEGATE_CONTACT = "default_delegate_contact"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_PROFILE_IMAGE_URI = "profile_image_uri"
+        private const val KEY_REMEMBERED_EMAIL = "remembered_email"
+        private const val KEY_BIOMETRIC_EMAIL = "biometric_email"
+    }
+
+    /** Account that biometric unlock signs into: the last one that signed in on this device. */
+    fun setBiometricEmail(email: String) {
+        prefs.edit().putString(KEY_BIOMETRIC_EMAIL, email).apply()
+    }
+
+    fun getBiometricEmail(): String? = prefs.getString(KEY_BIOMETRIC_EMAIL, null)
+
+    fun saveEmail(email: String) {
+        prefs.edit().putString(KEY_REMEMBERED_EMAIL, email).apply()
+    }
+
+    fun getSavedEmail(): String? = prefs.getString(KEY_REMEMBERED_EMAIL, null)
+
+    fun clearSavedEmail() {
+        prefs.edit().remove(KEY_REMEMBERED_EMAIL).apply()
     }
 
     fun saveUser(name: String, email: String) {
@@ -53,7 +74,13 @@ class SessionManager(context: Context) {
         prefs.edit().putString(KEY_DEFAULT_DELEGATE_CONTACT, contact).apply()
     }
 
-    fun getThemeMode(): Int = prefs.getInt(KEY_THEME_MODE, -1) // Default to System (-1)
+    /** Light or dark only; defaults to light (also for the old "System" setting). */
+    fun getThemeMode(): Int =
+        if (prefs.getInt(KEY_THEME_MODE, AppCompatDelegate.MODE_NIGHT_NO) == AppCompatDelegate.MODE_NIGHT_YES) {
+            AppCompatDelegate.MODE_NIGHT_YES
+        } else {
+            AppCompatDelegate.MODE_NIGHT_NO
+        }
 
     fun setThemeMode(mode: Int) {
         prefs.edit().putInt(KEY_THEME_MODE, mode).apply()
@@ -66,6 +93,14 @@ class SessionManager(context: Context) {
     }
 
     fun logout() {
-        prefs.edit().clear().apply()
+        // Keep the "Remember me" email and the biometric account so they survive logging out.
+        val rememberedEmail = getSavedEmail()
+        val biometricEmail = getBiometricEmail()
+        prefs.edit().apply {
+            clear()
+            rememberedEmail?.let { putString(KEY_REMEMBERED_EMAIL, it) }
+            biometricEmail?.let { putString(KEY_BIOMETRIC_EMAIL, it) }
+            apply()
+        }
     }
 }

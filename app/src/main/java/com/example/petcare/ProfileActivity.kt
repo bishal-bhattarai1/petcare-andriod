@@ -79,11 +79,7 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         // Load theme text
-        val themeText = when (sessionManager.getThemeMode()) {
-            AppCompatDelegate.MODE_NIGHT_NO -> "Light"
-            AppCompatDelegate.MODE_NIGHT_YES -> "Dark"
-            else -> "System"
-        }
+        val themeText = if (sessionManager.getThemeMode() == AppCompatDelegate.MODE_NIGHT_YES) "Dark" else "Light"
         findViewById<TextView>(R.id.textCurrentTheme).text = themeText
     }
 
@@ -100,21 +96,13 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.layoutAppTheme).setOnClickListener {
-            val themes = arrayOf("Light", "Dark", "System Default")
-            val checkedItem = when (sessionManager.getThemeMode()) {
-                AppCompatDelegate.MODE_NIGHT_NO -> 0
-                AppCompatDelegate.MODE_NIGHT_YES -> 1
-                else -> 2
-            }
+            val themes = arrayOf("Light", "Dark")
+            val checkedItem = if (sessionManager.getThemeMode() == AppCompatDelegate.MODE_NIGHT_YES) 1 else 0
 
             MaterialAlertDialogBuilder(this)
-                .setTitle("Choose Theme")
+                .setTitle("App theme")
                 .setSingleChoiceItems(themes, checkedItem) { dialog, which ->
-                    val mode = when (which) {
-                        0 -> AppCompatDelegate.MODE_NIGHT_NO
-                        1 -> AppCompatDelegate.MODE_NIGHT_YES
-                        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                    }
+                    val mode = if (which == 1) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
                     sessionManager.setThemeMode(mode)
                     AppCompatDelegate.setDefaultNightMode(mode)
                     dialog.dismiss()
@@ -146,15 +134,15 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.layoutHelpCenter).setOnClickListener {
-            openSupportUrl("https://petcare-app.example.com/help")
+            InfoActivity.open(this, InfoActivity.Page.HELP)
         }
 
         findViewById<View>(R.id.layoutPrivacyPolicy).setOnClickListener {
-            openSupportUrl("https://petcare-app.example.com/privacy")
+            InfoActivity.open(this, InfoActivity.Page.PRIVACY)
         }
 
         findViewById<View>(R.id.layoutTerms).setOnClickListener {
-            openSupportUrl("https://petcare-app.example.com/terms")
+            InfoActivity.open(this, InfoActivity.Page.TERMS)
         }
 
         findViewById<MaterialButton>(R.id.buttonLogout).setOnClickListener {
@@ -193,15 +181,6 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
 
-    private fun openSupportUrl(url: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Unable to open link", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun updateStatusBarIcons() {
         val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
@@ -234,7 +213,7 @@ class ProfileActivity : AppCompatActivity() {
             val label = item.getChildAt(1) as? TextView
             image?.imageTintList = ColorStateList.valueOf(color)
             label?.setTextColor(color)
-            label?.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+            label?.setTypeface(figtree(), if (selected) Typeface.BOLD else Typeface.NORMAL)
         }
     }
 }

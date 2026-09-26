@@ -1,18 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FFFFFF</color>
-    <color name="white">#121212</color>
+    <!-- PetCare dark palette (Material 3 tonal). Legacy aliases in values/colors.xml follow these. -->
 
-    <color name="app_bg">#121212</color>
-    <color name="app_text_primary">#FFFFFF</color>
-    <color name="app_text_secondary">#A0A0A0</color>
+    <color name="md_primary">#9CCBD9</color>
+    <color name="md_on_primary">#0B2A33</color>
+    <color name="md_primary_container">#3A2F24</color>
+    <color name="md_on_primary_container">#FFF2E5</color>
+    <color name="md_secondary">#F8AA4A</color>
+    <color name="md_on_secondary">#18414D</color>
+    <color name="md_secondary_container">#5A3F1C</color>
+    <color name="md_on_secondary_container">#FFE2BF</color>
+    <color name="md_tertiary">#A3CDDB</color>
+    <color name="md_on_tertiary">#03363F</color>
+    <color name="md_tertiary_container">#1F4A57</color>
+    <color name="md_on_tertiary_container">#D4E8EE</color>
+    <color name="md_error">#FFB4AB</color>
+    <color name="md_on_error">#690005</color>
+    <color name="md_error_container">#93000A</color>
+    <color name="md_on_error_container">#FFDAD6</color>
+    <color name="md_background">#101719</color>
+    <color name="md_surface_container_low">#172022</color>
+    <color name="md_surface_container">#1C2527</color>
+    <color name="md_surface_container_high">#263032</color>
+    <color name="md_surface_container_highest">#313B3D</color>
+    <color name="md_on_surface">#E3E8EA</color>
+    <color name="md_on_surface_variant">#A9B1B4</color>
+    <color name="md_outline">#8A9396</color>
+    <color name="md_outline_variant">#3A4447</color>
 
-    <color name="card_bg">#1E1E1E</color>
-    <color name="app_input_bg">#2A2A2A</color>
-    <color name="app_divider">#2C2C2C</color>
+    <color name="md_warning">#F8AA4A</color>
+    <color name="md_warning_container">#5A3F1C</color>
+    <color name="md_on_warning_container">#FFE2BF</color>
 
-    <color name="app_accent_red">#FF5252</color>
-    <color name="status_green">#81C784</color>
-    <color name="indicator_grey">#333333</color>
-    <color name="indicator_dark">#E0E0E0</color>
+    <!-- Categories: dark theme swaps background and icon/text -->
+    <color name="cat_feeding_bg">#653E00</color>
+    <color name="cat_feeding_fg">#FFDDB8</color>
+    <color name="cat_exercise_bg">#00522F</color>
+    <color name="cat_exercise_fg">#B2F1CD</color>
+    <color name="cat_grooming_bg">#004494</color>
+    <color name="cat_grooming_fg">#D6E3FF</color>
+    <color name="cat_medication_bg">#5B2B73</color>
+    <color name="cat_medication_fg">#F4DAFF</color>
+    <color name="cat_healthcare_bg">#8C1D3A</color>
+    <color name="cat_healthcare_fg">#FFD9DE</color>
+    <color name="cat_cleaning_bg">#434839</color>
+    <color name="cat_cleaning_fg">#E0E3D8</color>
+
+    <color name="expense_food">#74D3A8</color>
+    <color name="expense_food_bg">#1D3B2E</color>
+    <color name="expense_vet">#FF8E9B</color>
+    <color name="expense_vet_bg">#4A1F26</color>
+    <color name="expense_grooming">#9DB7FF</color>
+    <color name="expense_grooming_bg">#22304F</color>
+    <color name="expense_toys">#F8C170</color>
+    <color name="expense_toys_bg">#4A3518</color>
+
+    <color name="hero_ring_track">#330B2A33</color>
 </resources>

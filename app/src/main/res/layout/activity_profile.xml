@@ -40,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 app:cardBackgroundColor="@color/card_bg"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
@@ -115,7 +115,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 app:cardBackgroundColor="@color/card_bg"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
@@ -189,7 +189,7 @@
                             android:id="@+id/textCurrentTheme"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="System"
+                            android:text="Light"
                             android:textColor="@color/app_text_secondary"
                             android:textSize="13sp" />
                     </LinearLayout>
@@ -211,7 +211,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 app:cardBackgroundColor="@color/card_bg"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
@@ -456,7 +456,7 @@
                 android:textColor="@color/app_accent_red"
                 android:textStyle="bold"
                 app:backgroundTint="@color/app_input_bg"
-                app:cornerRadius="16dp"
+                app:cornerRadius="28dp"
                 app:elevation="0dp"
                 app:rippleColor="#20FF4B4B" />
 
@@ -469,7 +469,7 @@
         android:layout_width="match_parent"
         android:layout_height="104dp"
         android:layout_gravity="bottom"
-        android:backgroundTint="@color/white"
+        android:backgroundTint="@color/md_surface_container"
         app:fabAlignmentMode="center"
         app:fabCradleMargin="12dp"
         app:fabCradleRoundedCornerRadius="32dp"
@@ -555,8 +555,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_add_black"
-        app:backgroundTint="@color/black"
-        app:tint="@color/white"
+        app:backgroundTint="@color/md_secondary"
+        app:tint="@color/md_on_secondary"
         app:fabSize="normal"
         app:layout_anchor="@id/bottomAppBar"
         app:maxImageSize="36dp"

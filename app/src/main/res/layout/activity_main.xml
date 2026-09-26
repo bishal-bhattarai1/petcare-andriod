@@ -9,386 +9,992 @@
     android:background="@color/app_bg"
     tools:context=".MainActivity">
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <!-- Login Panel -->
-        <LinearLayout
-            android:id="@+id/loginPanel"
+        <!-- Container for Welcome, Login & Sign Up Panels -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="28dp"
-            android:visibility="visible">
+            android:layout_height="wrap_content">
 
-            <TextView
+            <!-- WELCOME / LANDING PANEL -->
+            <LinearLayout
+                android:id="@+id/welcomePanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="60dp"
-                android:gravity="center"
-                android:text="@string/auth_welcome_back"
-                android:textColor="@color/app_text_primary"
-                android:textSize="32sp"
-                android:textStyle="bold" />
+                android:orientation="vertical"
+                android:visibility="visible">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="@string/auth_login_subtitle"
-                android:textColor="@color/app_text_secondary"
-                android:textSize="16sp" />
-
-            <!-- Email Field -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/auth_label_email"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <EditText
-                android:id="@+id/loginEmailInput"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input"
-                android:hint="@string/auth_hint_email"
-                android:inputType="textEmailAddress"
-                android:paddingHorizontal="24dp"
-                android:textColor="@color/app_text_primary"
-                android:textColorHint="@color/app_text_secondary" />
-
-            <!-- Password Field -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/auth_label_password"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input">
-
-                <EditText
-                    android:id="@+id/loginPasswordInput"
+                <!-- Top Curved Mint Green Container -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/transparent"
-                    android:hint="@string/auth_hint_password"
-                    android:inputType="textPassword"
+                    android:layout_height="220dp"
+                    android:background="@drawable/bg_mint_welcome_card"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <ImageView
+                        android:layout_width="92dp"
+                        android:layout_height="92dp"
+                        android:src="@drawable/ic_petcare_logo_circle"
+                        tools:ignore="ContentDescription" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:letterSpacing="0.08"
+                        android:text="YOUR ALL-IN-ONE PET CARE COMPANION"
+                        android:textColor="#22533C"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Welcome Content Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
                     android:paddingHorizontal="24dp"
-                    android:textColor="@color/app_text_primary"
-                    android:textColorHint="@color/app_text_secondary" />
+                    android:paddingTop="24dp">
 
-                <ImageView
-                    android:id="@+id/loginPasswordEye"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="12dp"
-                    android:padding="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:src="@android:drawable/ic_menu_view"
-                    app:tint="@color/app_text_secondary" />
-            </RelativeLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="PetCare"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
 
-            <!-- Remember me & Forgot Password -->
-            <RelativeLayout
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Feeding, health records and care routines for every pet — in one place."
+                        android:textColor="@color/app_text_secondary"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="2dp" />
+
+                    <!-- Feature Bullet Points -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <RelativeLayout
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_welcome_badge">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_status_check"
+                                app:tint="#18414D"
+                                tools:ignore="ContentDescription" />
+                        </RelativeLayout>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="Daily &amp; weekly checklists for every pet"
+                            android:textColor="@color/app_text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <RelativeLayout
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_welcome_badge">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_chat"
+                                tools:ignore="ContentDescription" />
+                        </RelativeLayout>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="Share care routines with family by SMS"
+                            android:textColor="@color/app_text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <RelativeLayout
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_welcome_badge">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_location_pin"
+                                tools:ignore="ContentDescription" />
+                        </RelativeLayout>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="Save your vet, groomer and dog park on a map"
+                            android:textColor="@color/app_text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Primary & Secondary Action Buttons -->
+                    <Button
+                        android:id="@+id/welcomeCreateAccountButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="32dp"
+                        android:background="@drawable/bg_pill_button_dark_green"
+                        android:text="Create account"
+                        android:textAllCaps="false"
+                        android:textColor="@color/md_on_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="@null" />
+
+                    <Button
+                        android:id="@+id/welcomeLoginButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_pill_button_outlined_green"
+                        android:text="Log in"
+                        android:textAllCaps="false"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="@null" />
+
+                    <!-- Terms Footer -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center"
+                        android:text="By continuing you agree to the Terms and Privacy Policy"
+                        android:textColor="@color/app_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- LOGIN PANEL -->
+            <LinearLayout
+                android:id="@+id/loginPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp"
+                android:paddingTop="32dp"
+                android:paddingBottom="24dp"
+                android:visibility="gone">
+
+                <!-- Header Logo & Back -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:id="@+id/loginBackButton"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_back_arrow"
+                        app:tint="@color/auth_text_navy"
+                        tools:ignore="ContentDescription" />
+
+                    <ImageView
+                        android:id="@+id/imgLogoLogin"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_centerInParent="true"
+                        android:src="@drawable/ic_petcare_logo_circle"
+                        tools:ignore="ContentDescription" />
+                </RelativeLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="Welcome back to PetCare"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Keep your furry family happy, healthy, and on schedule."
+                    android:textColor="@color/auth_text_grey"
+                    android:textSize="13sp" />
+
+                <!-- Google Sign In Button -->
+                <LinearLayout
+                    android:id="@+id/buttonGoogleSignIn"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/bg_google_button_login"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_google"
+                        tools:ignore="ContentDescription" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:text="Continue with Google"
+                        android:textColor="@color/auth_text_navy"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- OR SIGN IN WITH EMAIL Divider -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/md_outline_variant" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="OR SIGN IN WITH EMAIL"
+                        android:textColor="@color/auth_text_grey"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/md_outline_variant" />
+                </LinearLayout>
+
+                <!-- Email Address Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Email Address"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_login_input_white">
+
+                    <ImageView
+                        android:id="@+id/iconLoginEmail"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="16dp"
+                        android:src="@drawable/ic_email"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/loginEmailInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toEndOf="@id/iconLoginEmail"
+                        android:background="@android:color/transparent"
+                        android:hint="sarah.miller@example.com"
+                        android:inputType="textEmailAddress"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/auth_text_navy"
+                        android:textColorHint="@color/md_outline"
+                        android:textSize="14sp" />
+                </RelativeLayout>
+
+                <!-- Password Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Password"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_login_input_white">
+
+                    <ImageView
+                        android:id="@+id/iconLoginPassword"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="16dp"
+                        android:src="@drawable/ic_lock"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/loginPasswordInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toStartOf="@id/loginPasswordEye"
+                        android:layout_toEndOf="@id/iconLoginPassword"
+                        android:background="@android:color/transparent"
+                        android:hint="••••••••••••"
+                        android:inputType="textPassword"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/auth_text_navy"
+                        android:textColorHint="@color/md_outline"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:id="@+id/loginPasswordEye"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_eye"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+                </RelativeLayout>
+
+                <!-- Remember Me & Forgot Password -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp">
+
+                    <CheckBox
+                        android:id="@+id/rememberMeCheck"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Remember me"
+                        android:textColor="@color/auth_text_navy"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:buttonTint="@color/auth_teal_primary" />
+
+                    <TextView
+                        android:id="@+id/forgotPasswordLink"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:text="Forgot password?"
+                        android:textColor="@color/auth_teal_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </RelativeLayout>
+
+                <!-- Sign In Button -->
+                <Button
+                    android:id="@+id/loginButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_pill_button_teal"
+                    android:text="Sign In →"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+                <!-- Biometric Card -->
+                <LinearLayout
+                    android:id="@+id/biometricCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_login_input_white"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <RelativeLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_mint_circle">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_centerInParent="true"
+                            android:src="@drawable/ic_fingerprint"
+                            app:tint="@color/auth_teal_primary"
+                            tools:ignore="ContentDescription" />
+                    </RelativeLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Biometric login"
+                            android:textColor="@color/auth_text_navy"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/biometricSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="Instant secure pet dashboard..."
+                            android:textColor="@color/auth_text_grey"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_use_biometric_btn"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="8dp"
+                        android:text="Unlock"
+                        android:textColor="@color/auth_teal_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Switch to Sign Up Link -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Don't have a PetCare account? "
+                        android:textColor="@color/auth_text_grey"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/showSignUpButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Create one"
+                        android:textColor="@color/auth_teal_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Legal Sub-footer -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center"
+                    android:text="By signing in, you agree to our Terms of Service &amp; Privacy Policy."
+                    android:textColor="@color/auth_text_grey"
+                    android:textSize="11sp" />
+
+            </LinearLayout>
+
+            <!-- SIGN UP PANEL -->
+            <LinearLayout
+                android:id="@+id/signUpPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp"
+                android:paddingTop="32dp"
+                android:paddingBottom="24dp"
+                android:visibility="gone">
+
+                <!-- Header Logo & Back -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:id="@+id/signUpBackButton"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_back_arrow"
+                        app:tint="@color/auth_text_navy"
+                        tools:ignore="ContentDescription" />
+
+                    <ImageView
+                        android:id="@+id/imgLogoSignUp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_centerInParent="true"
+                        android:src="@drawable/ic_petcare_logo_circle"
+                        tools:ignore="ContentDescription" />
+                </RelativeLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="Join PetCare"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Create an account to track your pet's health, appointments &amp; daily care."
+                    android:textColor="@color/auth_text_grey"
+                    android:textSize="13sp" />
+
+                <!-- Google Sign Up Button -->
+                <LinearLayout
+                    android:id="@+id/buttonGoogleSignUp"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/bg_google_button_signup"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_google"
+                        tools:ignore="ContentDescription" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:text="Sign up with Google"
+                        android:textColor="@color/auth_text_navy"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- OR REGISTER WITH EMAIL Divider -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/md_outline_variant" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="OR REGISTER WITH EMAIL"
+                        android:textColor="@color/auth_text_grey"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/md_outline_variant" />
+                </LinearLayout>
+
+                <!-- Full Name -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Full Name"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_signup_input_lavender">
+
+                    <ImageView
+                        android:id="@+id/iconSignUpName"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="16dp"
+                        android:src="@drawable/ic_person"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/signUpNameInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toEndOf="@id/iconSignUpName"
+                        android:background="@android:color/transparent"
+                        android:hint="Sarah Miller"
+                        android:inputType="textPersonName"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/auth_text_navy"
+                        android:textColorHint="@color/md_outline"
+                        android:textSize="14sp" />
+                </RelativeLayout>
+
+                <!-- Email Address -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Email Address"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_signup_input_lavender">
+
+                    <ImageView
+                        android:id="@+id/iconSignUpEmail"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="16dp"
+                        android:src="@drawable/ic_email"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/signUpEmailInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toEndOf="@id/iconSignUpEmail"
+                        android:background="@android:color/transparent"
+                        android:hint="sarah.miller@example.com"
+                        android:inputType="textEmailAddress"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/auth_text_navy"
+                        android:textColorHint="@color/md_outline"
+                        android:textSize="14sp" />
+                </RelativeLayout>
+
+                <!-- Password -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Password"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_signup_input_lavender">
+
+                    <ImageView
+                        android:id="@+id/iconSignUpPassword"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="16dp"
+                        android:src="@drawable/ic_lock"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/signUpPasswordInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toStartOf="@id/signUpPasswordEye"
+                        android:layout_toEndOf="@id/iconSignUpPassword"
+                        android:background="@android:color/transparent"
+                        android:hint="••••••••••••"
+                        android:inputType="textPassword"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/auth_text_navy"
+                        android:textColorHint="@color/md_outline"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:id="@+id/signUpPasswordEye"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_eye"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+                </RelativeLayout>
+
+                <!-- 4-Segment Password Strength Meter -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/strengthSegment1"
+                        android:layout_width="0dp"
+                        android:layout_height="4dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_strength_inactive" />
+
+                    <View
+                        android:id="@+id/strengthSegment2"
+                        android:layout_width="0dp"
+                        android:layout_height="4dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_strength_inactive" />
+
+                    <View
+                        android:id="@+id/strengthSegment3"
+                        android:layout_width="0dp"
+                        android:layout_height="4dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_strength_inactive" />
+
+                    <View
+                        android:id="@+id/strengthSegment4"
+                        android:layout_width="0dp"
+                        android:layout_height="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_strength_inactive" />
+                </LinearLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp">
+
+                    <TextView
+                        android:id="@+id/textPasswordStrength"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Enter a password"
+                        android:textColor="@color/auth_text_grey"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="8+ characters"
+                        android:textColor="@color/auth_text_grey"
+                        android:textSize="12sp" />
+                </RelativeLayout>
+
+                <!-- Confirm Password -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Confirm Password"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_signup_input_lavender">
+
+                    <ImageView
+                        android:id="@+id/iconSignUpConfirmPassword"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="16dp"
+                        android:src="@drawable/ic_lock"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/signUpConfirmPasswordInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toStartOf="@id/signUpConfirmPasswordEye"
+                        android:layout_toEndOf="@id/iconSignUpConfirmPassword"
+                        android:background="@android:color/transparent"
+                        android:hint="••••••••••••"
+                        android:inputType="textPassword"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/auth_text_navy"
+                        android:textColorHint="@color/md_outline"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:id="@+id/signUpConfirmPasswordEye"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_eye"
+                        app:tint="@color/auth_text_grey"
+                        tools:ignore="ContentDescription" />
+                </RelativeLayout>
+
+                <!-- Terms and Care Tips Checkboxes -->
+                <CheckBox
+                    android:id="@+id/termsCheck"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="I agree to the Terms of Service &amp; Privacy Policy"
+                    android:textColor="@color/auth_text_navy"
+                    android:textSize="12sp"
+                    android:buttonTint="@color/auth_teal_primary" />
 
                 <CheckBox
-                    android:id="@+id/rememberMeCheck"
+                    android:id="@+id/careTipsCheck"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/auth_remember_me"
-                    android:textColor="@color/app_text_primary"
-                    android:buttonTint="@color/status_green" />
+                    android:text="Receive vet care tips, reminders &amp; health milestones via email"
+                    android:textColor="@color/auth_text_grey"
+                    android:textSize="12sp"
+                    android:checked="true"
+                    android:buttonTint="@color/auth_teal_primary" />
 
-                <TextView
-                    android:id="@+id/forgotPasswordLink"
-                    android:layout_width="wrap_content"
+                <!-- Create Account Button -->
+                <Button
+                    android:id="@+id/signUpButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_pill_button_teal"
+                    android:text="Create PetCare Account →"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+                <!-- Switch to Login Link -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:text="@string/auth_forgot_password"
-                    android:textColor="@color/app_accent_red"
-                    android:textStyle="bold" />
-            </RelativeLayout>
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
-            <!-- Sign in Button -->
-            <Button
-                android:id="@+id/loginButton"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:layout_marginTop="32dp"
-                android:background="@drawable/bg_pill_button_black"
-                android:text="@string/auth_signin_button"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Already have a PetCare account? "
+                        android:textColor="@color/auth_text_grey"
+                        android:textSize="13sp" />
 
-            <!-- OR Divider -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:gravity="center"
-                android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/showLoginButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sign In"
+                        android:textColor="@color/auth_teal_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"
-                    android:background="@color/app_divider" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="16dp"
-                    android:text="@string/auth_or_divider"
-                    android:textColor="@color/app_text_secondary"
-                    android:textStyle="bold" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"
-                    android:background="@color/app_divider" />
             </LinearLayout>
 
-            <!-- Social Buttons -->
-            <LinearLayout
-                android:id="@+id/buttonGoogleSignIn"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/bg_pill_button_grey"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_google"
-                    tools:ignore="ContentDescription" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:text="@string/auth_google_button"
-                    android:textColor="@color/app_text_primary"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/showSignUpButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="40dp"
-                android:layout_marginBottom="24dp"
-                android:gravity="center"
-                android:text="@string/auth_no_account"
-                android:textColor="@color/app_text_primary"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
-        <!-- Sign Up Panel -->
-        <LinearLayout
-            android:id="@+id/signUpPanel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="28dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="60dp"
-                android:gravity="center"
-                android:text="@string/auth_signup_title"
-                android:textColor="@color/app_text_primary"
-                android:textSize="32sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="@string/auth_signup_subtitle"
-                android:textColor="@color/app_text_secondary"
-                android:textSize="16sp" />
-
-            <!-- Name Field -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/auth_label_name"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <EditText
-                android:id="@+id/signUpNameInput"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input"
-                android:hint="@string/auth_hint_name"
-                android:inputType="textPersonName"
-                android:paddingHorizontal="24dp"
-                android:textColor="@color/app_text_primary"
-                android:textColorHint="@color/app_text_secondary" />
-
-            <!-- Email Field -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/auth_label_email"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <EditText
-                android:id="@+id/signUpEmailInput"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input"
-                android:hint="@string/auth_hint_email"
-                android:inputType="textEmailAddress"
-                android:paddingHorizontal="24dp"
-                android:textColor="@color/app_text_primary"
-                android:textColorHint="@color/app_text_secondary" />
-
-            <!-- Password Field -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/auth_label_password"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input">
-
-                <EditText
-                    android:id="@+id/signUpPasswordInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/transparent"
-                    android:hint="@string/auth_hint_password"
-                    android:inputType="textPassword"
-                    android:paddingHorizontal="24dp"
-                    android:textColor="@color/app_text_primary"
-                    android:textColorHint="@color/app_text_secondary" />
-
-                <ImageView
-                    android:id="@+id/signUpPasswordEye"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="12dp"
-                    android:padding="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:src="@android:drawable/ic_menu_view"
-                    app:tint="@color/app_text_secondary" />
-            </RelativeLayout>
-
-            <!-- Confirm Password Field -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/auth_label_confirm_password"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_input">
-
-                <EditText
-                    android:id="@+id/signUpConfirmPasswordInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/transparent"
-                    android:hint="@string/auth_hint_confirm_password"
-                    android:inputType="textPassword"
-                    android:paddingHorizontal="24dp"
-                    android:textColor="@color/app_text_primary"
-                    android:textColorHint="@color/app_text_secondary" />
-
-                <ImageView
-                    android:id="@+id/signUpConfirmPasswordEye"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="12dp"
-                    android:padding="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:src="@android:drawable/ic_menu_view"
-                    app:tint="@color/app_text_secondary" />
-            </RelativeLayout>
-
-            <!-- Sign up Button -->
-            <Button
-                android:id="@+id/signUpButton"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:layout_marginTop="32dp"
-                android:background="@drawable/bg_pill_button_black"
-                android:text="@string/auth_signup_button"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
-
-            <TextView
-                android:id="@+id/showLoginButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="40dp"
-                android:layout_marginBottom="24dp"
-                android:gravity="center"
-                android:text="@string/auth_already_account"
-                android:textColor="@color/app_text_primary"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-    </FrameLayout>
+        </FrameLayout>
+    </LinearLayout>
 </ScrollView>

@@ -35,6 +35,10 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
     implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     testImplementation(libs.junit)

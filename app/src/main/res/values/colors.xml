@@ -1,23 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#000000</color>
-    <color name="white">#FFFFFF</color>
+    <!--
+        PetCare palette: Material 3 tonal scheme, primary navy #18414D, accent #F8AA4A, cream #FFF2E5.
+        Light values live here; values-night/colors.xml overrides only the md_* / cat_* tokens,
+        so every legacy alias below switches theme automatically.
+    -->
+
+    <!-- Main theme roles -->
+    <color name="md_primary">#18414D</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#FFF2E5</color>
+    <color name="md_on_primary_container">#18414D</color>
+    <color name="md_secondary">#F8AA4A</color>
+    <color name="md_on_secondary">#18414D</color>
+    <color name="md_secondary_container">#FFE2BF</color>
+    <color name="md_on_secondary_container">#18414D</color>
+    <color name="md_tertiary">#2F6475</color>
+    <color name="md_on_tertiary">#FFFFFF</color>
+    <color name="md_tertiary_container">#D4E8EE</color>
+    <color name="md_on_tertiary_container">#0B2A33</color>
+    <color name="md_error">#BA1A1A</color>
+    <color name="md_on_error">#FFFFFF</color>
+    <color name="md_error_container">#FFDAD6</color>
+    <color name="md_on_error_container">#410002</color>
+    <color name="md_background">#F8FAFA</color>
+    <color name="md_surface_container_low">#FFFFFF</color>
+    <color name="md_surface_container">#F0F3F3</color>
+    <color name="md_surface_container_high">#E8ECEC</color>
+    <color name="md_surface_container_highest">#DFE4E5</color>
+    <color name="md_on_surface">#1E293B</color>
+    <color name="md_on_surface_variant">#475569</color>
+    <color name="md_outline">#64748B</color>
+    <color name="md_outline_variant">#CBD5E1</color>
+
+    <!-- Warning / reminder (budget alert, "due soon") -->
+    <color name="md_warning">#B8741A</color>
+    <color name="md_warning_container">#FFE2BF</color>
+    <color name="md_on_warning_container">#4A2800</color>
+
+    <!-- Task categories: background + icon/text (swapped in dark theme) -->
+    <color name="cat_feeding_bg">#FFDDB8</color>
+    <color name="cat_feeding_fg">#653E00</color>
+    <color name="cat_exercise_bg">#B2F1CD</color>
+    <color name="cat_exercise_fg">#00522F</color>
+    <color name="cat_grooming_bg">#D6E3FF</color>
+    <color name="cat_grooming_fg">#004494</color>
+    <color name="cat_medication_bg">#F4DAFF</color>
+    <color name="cat_medication_fg">#5B2B73</color>
+    <color name="cat_healthcare_bg">#FFD9DE</color>
+    <color name="cat_healthcare_fg">#8C1D3A</color>
+    <color name="cat_cleaning_bg">#E0E3D8</color>
+    <color name="cat_cleaning_fg">#434839</color>
+
+    <!-- Other UI colours -->
+    <color name="snackbar_bg">#18414D</color>
+    <color name="snackbar_text">#FFF2E5</color>
+    <color name="snackbar_action">#F8AA4A</color>
+    <color name="scrim">#61000000</color>
+
+    <!-- Legacy names, mapped onto the palette -->
+    <!-- "black"/"white" are used app-wide as the strong accent and the colour drawn on it -->
+    <color name="black">@color/md_primary</color>
+    <color name="white">@color/md_on_primary</color>
     <color name="real_white">#FFFFFF</color>
 
-    <color name="app_bg">#FFFFFF</color>
-    <color name="app_text_primary">#000000</color>
-    <color name="app_text_secondary">#757575</color>
+    <color name="app_bg">@color/md_background</color>
+    <color name="app_text_primary">@color/md_on_surface</color>
+    <color name="app_text_secondary">@color/md_on_surface_variant</color>
 
-    <color name="card_bg">#F2F4F7</color>
-    <color name="app_input_bg">#F5F5F5</color>
-    <color name="app_divider">#EEEEEE</color>
+    <color name="card_bg">@color/md_surface_container_low</color>
+    <color name="app_input_bg">@color/md_surface_container</color>
+    <color name="app_divider">@color/md_outline_variant</color>
 
-    <color name="app_accent_red">#FF4B4B</color>
-    <color name="app_accent_blue">#2196F3</color>
-    <color name="status_green">#4CAF50</color>
-    <color name="indicator_grey">#E0E0E0</color>
-    <color name="indicator_dark">#333333</color>
+    <color name="app_accent_red">@color/md_error</color>
+    <color name="app_accent_blue">@color/md_tertiary</color>
+    <color name="status_green">@color/md_primary</color>
+    <color name="indicator_grey">@color/md_surface_container_highest</color>
+    <color name="indicator_dark">@color/md_on_surface</color>
+    <color name="indicator_orange">@color/md_warning</color>
 
-    <!-- Legacy/Other -->
-    <color name="indicator_orange">#FF9800</color>
+    <color name="auth_teal_primary">@color/md_primary</color>
+    <color name="auth_teal_accent">@color/md_primary</color>
+    <color name="auth_input_bg">@color/md_surface_container</color>
+    <color name="auth_text_navy">@color/md_on_surface</color>
+    <color name="auth_text_grey">@color/md_on_surface_variant</color>
+
+    <color name="strength_grey">@color/md_outline_variant</color>
+    <color name="strength_weak">@color/md_error</color>
+    <color name="strength_medium">@color/md_warning</color>
+    <color name="strength_strong">@color/md_primary</color>
+
+    <!-- Expense categories: chart/icon colour + soft icon background (readable in both themes) -->
+    <color name="expense_food">#2E7D5B</color>
+    <color name="expense_food_bg">#D5F0E3</color>
+    <color name="expense_vet">#C23A4B</color>
+    <color name="expense_vet_bg">#FBDDE1</color>
+    <color name="expense_grooming">#3A62C4</color>
+    <color name="expense_grooming_bg">#DCE5FB</color>
+    <color name="expense_toys">#B8741A</color>
+    <color name="expense_toys_bg">#FFE8C7</color>
+
+    <!-- Home "Today" card: progress ring track drawn on md_primary -->
+    <color name="hero_ring_track">#33FFFFFF</color>
 </resources>

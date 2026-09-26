@@ -25,7 +25,7 @@ data class PetDashboardModel(
     val isGroomed: Boolean = false
 )
 
-class PetAdapter(private val pets: List<PetDashboardModel>) :
+class PetAdapter(private var pets: List<PetDashboardModel>) :
     RecyclerView.Adapter<PetAdapter.PetViewHolder>() {
 
     class PetViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -56,6 +56,8 @@ class PetAdapter(private val pets: List<PetDashboardModel>) :
         if (pet.statusAlert != null) {
             holder.alert.text = pet.statusAlert
             holder.alert.visibility = View.VISIBLE
+            val alertColor = if (pet.isCritical) R.color.app_accent_red else R.color.status_green
+            holder.alert.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, alertColor))
         } else {
             holder.alert.visibility = View.GONE
         }
@@ -89,13 +91,14 @@ class PetAdapter(private val pets: List<PetDashboardModel>) :
         bindCareChip(holder.chipGroom, pet.isGroomed, R.color.indicator_dark)
 
         if (pet.avatarUri != null) {
-            try {
-                holder.avatar.setImageURI(android.net.Uri.parse(pet.avatarUri))
-                holder.avatar.imageTintList = null
-                holder.avatar.setPadding(0, 0, 0, 0)
-                holder.avatar.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-            } catch (_: Exception) {}
+            holder.avatar.imageTintList = null
+            holder.avatar.setPadding(0, 0, 0, 0)
+            holder.avatar.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            // Downsampled, off the main thread (full-size decodes made the list stutter).
+            PetImageLoader.load(holder.avatar, pet.avatarUri, 64.dp() * 2)
         } else {
+            holder.avatar.tag = null
+            holder.avatar.scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
             holder.avatar.setImageResource(R.drawable.ic_paw)
             holder.avatar.imageTintList = android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.indicator_dark))
             holder.avatar.setPadding(12.dp(), 12.dp(), 12.dp(), 12.dp())
@@ -110,6 +113,11 @@ class PetAdapter(private val pets: List<PetDashboardModel>) :
     }
 
     override fun getItemCount() = pets.size
+
+    fun submit(newPets: List<PetDashboardModel>) {
+        pets = newPets
+        notifyDataSetChanged()
+    }
 
     private fun bindCareChip(view: TextView, isDone: Boolean, activeColorRes: Int) {
         val context = view.context
@@ -128,11 +136,11 @@ class PetAdapter(private val pets: List<PetDashboardModel>) :
             view.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.app_text_secondary))
             androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(
                 view, 
-                android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(context, R.color.indicator_grey))
+                android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(context, R.color.app_text_secondary))
             )
             view.setBackgroundResource(R.drawable.bg_pill_button_grey)
             view.backgroundTintList = null
-            view.alpha = 0.5f
+            view.alpha = 1.0f
         }
     }
 

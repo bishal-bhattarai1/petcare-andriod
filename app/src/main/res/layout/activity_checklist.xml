@@ -40,11 +40,12 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/textChecklistSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:includeFontPadding="false"
-                        android:text="Mark complete or edit reminders"
+                        android:text="Today's routines"
                         android:textColor="@color/app_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -80,23 +81,70 @@
                     android:textColor="@color/app_text_primary"
                     android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Dynamic Pet Filter Chips -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupPets"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleLine="true"
+                    app:singleSelection="true" />
+            </HorizontalScrollView>
+
+            <!-- Today's progress -->
+            <LinearLayout
+                android:id="@+id/layoutChecklistProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressChecklist"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="100"
+                    app:indicatorColor="@color/md_secondary"
+                    app:trackColor="@color/md_surface_container_high"
+                    app:trackCornerRadius="4dp"
+                    app:trackThickness="8dp" />
+
+                <TextView
+                    android:id="@+id/textChecklistPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:minWidth="36dp"
+                    android:gravity="end"
+                    android:textColor="@color/app_text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerChecklist"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="8dp"
         android:paddingBottom="96dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <LinearLayout
-            android:id="@+id/layoutChecklistItems"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp" />
-    </androidx.core.widget.NestedScrollView>
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <TextView
         android:id="@+id/textEmptyChecklist"
@@ -108,7 +156,8 @@
         android:drawablePadding="16dp"
         app:drawableTopCompat="@drawable/ic_walk"
         app:drawableTint="@color/indicator_grey"
-        android:text="No checklist items yet."
+        android:text="No routines yet.
+Tap + to add one."
         android:textColor="@color/app_text_secondary"
         android:textSize="14sp"
         android:visibility="gone" />
@@ -120,7 +169,7 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="20dp"
         android:src="@drawable/ic_add_black"
-        app:backgroundTint="@color/black"
+        app:backgroundTint="@color/md_secondary"
         app:maxImageSize="34dp"
-        app:tint="@color/white" />
+        app:tint="@color/md_on_secondary" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

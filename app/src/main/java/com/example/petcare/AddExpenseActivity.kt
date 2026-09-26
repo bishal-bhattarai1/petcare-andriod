@@ -133,7 +133,7 @@ class AddExpenseActivity : AppCompatActivity() {
         val calendar = Calendar.getInstance()
 
         fun setDate(year: Int, month: Int, dayOfMonth: Int) {
-            input.setText(String.format(Locale.getDefault(), "%02d/%02d/%d", dayOfMonth, month + 1, year))
+            input.setText(String.format(Locale.US, "%02d/%02d/%d", dayOfMonth, month + 1, year))
         }
 
         setDate(

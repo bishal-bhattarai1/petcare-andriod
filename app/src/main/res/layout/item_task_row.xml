@@ -2,103 +2,139 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/taskCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
     app:cardBackgroundColor="@color/card_bg"
-    app:cardCornerRadius="14dp"
+    app:cardCornerRadius="20dp"
     app:cardElevation="0dp"
-    app:strokeWidth="1dp"
-    app:strokeColor="@android:color/transparent">
+    app:strokeColor="@color/md_outline_variant"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="16dp">
+        android:orientation="horizontal">
 
-        <FrameLayout
-            android:id="@+id/taskCheckbox"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
-            <ImageView
-                android:id="@+id/taskCheckImg"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerInside" />
-        </FrameLayout>
+        <!-- Left Accent Stripe -->
+        <View
+            android:id="@+id/taskAccentBar"
+            android:layout_width="4dp"
+            android:layout_height="match_parent"
+            android:background="@color/auth_teal_primary" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="12dp">
 
-            <TextView
-                android:id="@+id/taskDesc"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/app_text_primary"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                tools:text="Feed Max morning meal" />
+            <!-- Checkbox / Completion Icon -->
+            <FrameLayout
+                android:id="@+id/taskCheckbox"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
+                <ImageView
+                    android:id="@+id/taskCheckImg"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerInside" />
+            </FrameLayout>
+
+            <!-- Task Info (Title, Pet Badge & Time/Notes) -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/taskPetBadge"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pill_button_black"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="2dp"
-                    android:textColor="@color/white"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    tools:text="MAX" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/taskLocBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:textColor="@color/app_text_secondary"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    tools:text="📍 Happy Vet"
-                    tools:visibility="visible" />
+                    <TextView
+                        android:id="@+id/taskDesc"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/auth_text_navy"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        tools:text="Morning Kibble &amp; Wet Food" />
+
+                    <!-- Prominent Pet Badge -->
+                    <TextView
+                        android:id="@+id/taskPetBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_use_biometric_btn"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:textColor="@color/auth_teal_primary"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        tools:text="Ggu" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/taskSchedule"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:textColor="@color/app_text_secondary"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/auth_text_grey"
                     android:textSize="12sp"
-                    tools:text="08:00 AM • Daily" />
+                    tools:text="7:30 AM • 1 can salmon blend" />
             </LinearLayout>
+
+            <!-- Right Badge (e.g., Done, Due 2:00 PM, Meds, Sitter) -->
+            <TextView
+                android:id="@+id/taskBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/bg_task_badge_due"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textColor="@color/md_warning"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="Due 2:00 PM" />
+
+            <!-- Three Dots Overflow -->
+            <ImageView
+                android:id="@+id/taskMoreOptions"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:padding="2dp"
+                android:src="@drawable/ic_three_dots"
+                tools:ignore="ContentDescription" />
+
+            <!-- Hidden Legacy Badges for compatibility -->
+            <TextView
+                android:id="@+id/taskLocBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/taskStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/taskStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textColor="@color/app_text_secondary"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            tools:text="Checklist" />
-
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -26,6 +26,13 @@
     <string name="auth_or_divider">OR</string>
     <string name="auth_google_button">Continue with Google</string>
 
+    <!--
+        OAuth 2.0 *Web application* client ID from Google Cloud Console (APIs & Services > Credentials),
+        e.g. 1234567890-abc123.apps.googleusercontent.com. An *Android* client for package
+        com.example.petcare with this machine's debug SHA-1 must also exist in the same project.
+    -->
+    <string name="google_web_client_id" translatable="false"></string>
+
     <string name="auth_no_account">Don’t have an account? Sign up</string>
     <string name="auth_already_account">Already have an account? Sign in</string>
 

@@ -1,25 +1,47 @@
 package com.example.petcare
 
+import android.app.AlarmManager
 import android.app.DatePickerDialog
+import android.app.PendingIntent
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.progressindicator.LinearProgressIndicator
-import com.google.android.material.switchmaterial.SwitchMaterial
-import java.util.*
+import com.google.android.material.shape.CornerFamily
+import com.google.android.material.shape.ShapeAppearanceModel
+import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.textfield.TextInputLayout
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.math.roundToInt
 
 class AddEditPetActivity : AppCompatActivity() {
     private lateinit var database: AuthDatabaseHelper
-    
+
     private lateinit var inputPetName: EditText
     private lateinit var inputBreed: EditText
     private lateinit var inputAge: EditText
@@ -30,25 +52,39 @@ class AddEditPetActivity : AppCompatActivity() {
     private lateinit var inputToys: EditText
     private lateinit var inputNotes: EditText
     private lateinit var inputOtherSpecies: EditText
-    
+
     private lateinit var chipGroupSpecies: ChipGroup
     private lateinit var progressCompletion: LinearProgressIndicator
     private lateinit var textCompletion: TextView
-    private lateinit var switchReminder: SwitchMaterial
+    private lateinit var switchReminder: MaterialSwitch
     private lateinit var layoutPhotos: LinearLayout
-    
+    private lateinit var imagePetMain: ShapeableImageView
+
     private var editingPetId: Long = -1L
     private val selectedPhotos = mutableListOf<String>()
 
-    private val pickMultipleMedia = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
-        if (uris.isNotEmpty()) {
-            uris.forEach { uri ->
-                contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                selectedPhotos.add(uri.toString())
+    /** Set once the user changes anything, so leaving asks before discarding it. */
+    private var hasUnsavedChanges = false
+    private var isLoading = false
+    private lateinit var chipGroupAllergies: ChipGroup
+
+    private val pickMultipleMedia = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_PHOTOS)) { uris ->
+        if (uris.isEmpty()) return@registerForActivityResult
+        val room = MAX_PHOTOS - selectedPhotos.size
+        uris.take(room).forEach { uri ->
+            try {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: SecurityException) {
+                // Some providers don't offer persistable access; the photo still works this session.
             }
-            renderThumbnails()
-            updateProgress()
+            if (uri.toString() !in selectedPhotos) selectedPhotos.add(uri.toString())
         }
+        if (uris.size > room) {
+            Toast.makeText(this, "You can add up to $MAX_PHOTOS photos", Toast.LENGTH_SHORT).show()
+        }
+        markChanged()
+        renderPhotos()
+        updateProgress()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,8 +95,10 @@ class AddEditPetActivity : AppCompatActivity() {
 
         updateStatusBarIcons()
 
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
+        findViewById<Toolbar>(R.id.toolbar).setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = confirmDiscardOrFinish()
+        })
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -69,50 +107,49 @@ class AddEditPetActivity : AppCompatActivity() {
         }
 
         initViews()
-        
-        editingPetId = intent.getLongExtra("EXTRA_PET_ID", -1L)
-        if (editingPetId != -1L) {
-            loadExistingPet(editingPetId)
-        }
-        
         setupListeners()
+
+        editingPetId = intent.getLongExtra("EXTRA_PET_ID", -1L)
+        if (editingPetId != -1L) loadExistingPet(editingPetId)
+        renderPhotos()
+        updateProgress()
     }
 
     private fun loadExistingPet(id: Long) {
         val data = database.getPetById(id) ?: return
-        
+        isLoading = true
+
         inputPetName.setText(data.getAsString("name"))
         inputBreed.setText(data.getAsString("breed"))
-        inputAge.setText(data.getAsString("age"))
-        inputWeight.setText(data.getAsString("weight"))
+        inputAge.setText(data.getAsInteger("age")?.takeIf { it > 0 }?.toString().orEmpty())
+        inputWeight.setText(data.getAsDouble("weight")?.takeIf { it > 0 }?.let { formatNumber(it) }.orEmpty())
         inputDiet.setText(data.getAsString("diet"))
         inputVaccineDate.setText(data.getAsString("vaccine_date"))
-        inputAllergies.setText(data.getAsString("allergies"))
+        setAllergies(data.getAsString("allergies").orEmpty())
         inputToys.setText(data.getAsString("toys"))
         inputNotes.setText(data.getAsString("notes"))
-        
-        val species = data.getAsString("species")
-        when (species) {
+
+        when (val species = data.getAsString("species")) {
             "Dog" -> chipGroupSpecies.check(R.id.chipDog)
             "Cat" -> chipGroupSpecies.check(R.id.chipCat)
+            "Bird" -> chipGroupSpecies.check(R.id.chipBird)
+            "Rabbit" -> chipGroupSpecies.check(R.id.chipRabbit)
+            null, "", "Unknown" -> Unit
             else -> {
                 chipGroupSpecies.check(R.id.chipOther)
                 inputOtherSpecies.setText(species)
                 findViewById<View>(R.id.layoutOtherSpecies).visibility = View.VISIBLE
             }
         }
-        
-        val reminder = data.getAsInteger("reminder_enabled") == 1
-        switchReminder.isChecked = reminder
-        
-        // Photos
-        val photos = database.getPetPhotos(id)
+
+        switchReminder.isChecked = data.getAsInteger("reminder_enabled") == 1
+
         selectedPhotos.clear()
-        selectedPhotos.addAll(photos)
-        renderThumbnails()
-        
-        findViewById<TextView>(R.id.textCompletion).text = "Editing Profile"
-        findViewById<Button>(R.id.buttonSavePet).text = "Update Pet"
+        selectedPhotos.addAll(database.getPetPhotos(id))
+
+        findViewById<TextView>(R.id.textPetFormTitle).text = "Edit pet"
+        findViewById<Button>(R.id.buttonSavePet).text = "Save changes"
+        isLoading = false
     }
 
     private fun initViews() {
@@ -123,163 +160,302 @@ class AddEditPetActivity : AppCompatActivity() {
         inputDiet = findViewById(R.id.inputDiet)
         inputVaccineDate = findViewById(R.id.inputVaccineDate)
         inputAllergies = findViewById(R.id.inputAllergies)
+        chipGroupAllergies = findViewById(R.id.chipGroupAllergies)
         inputToys = findViewById(R.id.inputToys)
         inputNotes = findViewById(R.id.inputNotes)
         inputOtherSpecies = findViewById(R.id.inputOtherSpecies)
-        
+
         chipGroupSpecies = findViewById(R.id.chipGroupSpecies)
         progressCompletion = findViewById(R.id.progressCompletion)
         textCompletion = findViewById(R.id.textCompletion)
         switchReminder = findViewById(R.id.switchReminder)
         layoutPhotos = findViewById(R.id.layoutPetPhotos)
+        imagePetMain = findViewById(R.id.imagePetMain)
     }
 
-    private fun renderThumbnails() {
-        // Keep the "Add More" button which is at the end or start.
-        // In XML it is at index 0.
-        val addMoreButton = findViewById<View>(R.id.buttonAddMorePhotos)
-        layoutPhotos.removeAllViews()
-        layoutPhotos.addView(addMoreButton)
+    // region Photos
 
-        selectedPhotos.forEach { uriString ->
-            val imageView = com.google.android.material.imageview.ShapeableImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(52.dp(), 52.dp()).apply { marginEnd = 8.dp() }
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                shapeAppearanceModel = com.google.android.material.shape.ShapeAppearanceModel.builder()
-                    .setAllCorners(com.google.android.material.shape.CornerFamily.ROUNDED, 8.dp().toFloat())
-                    .build()
-                setImageURI(android.net.Uri.parse(uriString))
-                setOnClickListener {
-                    selectedPhotos.remove(uriString)
-                    renderThumbnails()
-                    updateProgress()
-                }
-            }
-            layoutPhotos.addView(imageView, 0) // Add before the plus button
+    /** Main avatar = first photo; thumbnails in order, tap one for options. */
+    private fun renderPhotos() {
+        val main = selectedPhotos.firstOrNull()
+        if (main != null) {
+            imagePetMain.setPadding(0, 0, 0, 0)
+            imagePetMain.scaleType = ImageView.ScaleType.CENTER_CROP
+            imagePetMain.imageTintList = null
+            PetImageLoader.load(imagePetMain, main, 104.dp() * 2)
+        } else {
+            imagePetMain.tag = null
+            imagePetMain.setPadding(26.dp(), 26.dp(), 26.dp(), 26.dp())
+            imagePetMain.scaleType = ImageView.ScaleType.CENTER_INSIDE
+            imagePetMain.setImageResource(R.drawable.ic_paw)
+            imagePetMain.imageTintList = ContextCompat.getColorStateList(this, R.color.md_on_secondary_container)
         }
+
+        val addButton = findViewById<View>(R.id.buttonAddMorePhotos)
+        layoutPhotos.removeAllViews()
+        val size = 64.dp()
+        selectedPhotos.forEachIndexed { index, uri ->
+            val thumb = ShapeableImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(size, size).apply { marginEnd = 8.dp() }
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setBackgroundColor(ContextCompat.getColor(this@AddEditPetActivity, R.color.md_surface_container_high))
+                shapeAppearanceModel = ShapeAppearanceModel.builder()
+                    .setAllCorners(CornerFamily.ROUNDED, 12.dp().toFloat())
+                    .build()
+                if (index == 0) {
+                    strokeColor = ContextCompat.getColorStateList(this@AddEditPetActivity, R.color.md_secondary)
+                    strokeWidth = 2.dp().toFloat()
+                    setPadding(1.dp(), 1.dp(), 1.dp(), 1.dp())
+                }
+                contentDescription = if (index == 0) "Main photo. Tap for options." else "Photo ${index + 1}. Tap for options."
+                setOnClickListener { showPhotoOptions(uri) }
+            }
+            PetImageLoader.load(thumb, uri, size * 2)
+            layoutPhotos.addView(thumb)
+        }
+        addButton.visibility = if (selectedPhotos.size < MAX_PHOTOS) View.VISIBLE else View.GONE
+        layoutPhotos.addView(addButton)
     }
 
-    private fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
+    private fun showPhotoOptions(uri: String) {
+        val isMain = selectedPhotos.firstOrNull() == uri
+        val options = if (isMain) arrayOf("Remove photo") else arrayOf("Make main photo", "Remove photo")
+        MaterialAlertDialogBuilder(this)
+            .setItems(options) { _, which ->
+                when (options[which]) {
+                    "Make main photo" -> {
+                        selectedPhotos.remove(uri)
+                        selectedPhotos.add(0, uri)
+                    }
+                    "Remove photo" -> selectedPhotos.remove(uri)
+                }
+                markChanged()
+                renderPhotos()
+                updateProgress()
+            }
+            .show()
+    }
+
+    private fun pickPhotos() {
+        if (selectedPhotos.size >= MAX_PHOTOS) {
+            Toast.makeText(this, "You can add up to $MAX_PHOTOS photos", Toast.LENGTH_SHORT).show()
+            return
+        }
+        pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    // endregion
 
     private fun setupListeners() {
-        findViewById<View>(R.id.buttonAddMorePhotos).setOnClickListener {
-            pickMultipleMedia.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }
-        
-        findViewById<View>(R.id.buttonCamera).setOnClickListener {
-            pickMultipleMedia.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }
+        findViewById<View>(R.id.buttonAddMorePhotos).setOnClickListener { pickPhotos() }
+        findViewById<View>(R.id.buttonCamera).setOnClickListener { pickPhotos() }
+        imagePetMain.setOnClickListener { pickPhotos() }
 
-        // Species Toggle
         chipGroupSpecies.setOnCheckedStateChangeListener { _, checkedIds ->
             val isOther = checkedIds.contains(R.id.chipOther)
             findViewById<View>(R.id.layoutOtherSpecies).visibility = if (isOther) View.VISIBLE else View.GONE
+            markChanged()
             updateProgress()
         }
 
-        // Date Picker
-        inputVaccineDate.setOnClickListener {
-            val c = Calendar.getInstance()
-            DatePickerDialog(this, { _, year, month, day ->
-                inputVaccineDate.setText("$day/${month + 1}/$year")
-                updateProgress()
-            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
-        }
+        val openDatePicker = View.OnClickListener { showVaccineDatePicker() }
+        inputVaccineDate.setOnClickListener(openDatePicker)
+        findViewById<TextInputLayout>(R.id.layoutVaccineDate).setEndIconOnClickListener(openDatePicker)
+        switchReminder.setOnCheckedChangeListener { _, _ -> markChanged() }
 
-        // Progress Watchers
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) { updateProgress() }
+            override fun afterTextChanged(s: Editable?) {
+                markChanged()
+                updateProgress()
+            }
         }
-
-        listOf(inputPetName, inputBreed, inputAge, inputWeight, inputDiet, inputAllergies, inputToys, inputNotes)
+        listOf(inputPetName, inputBreed, inputAge, inputWeight, inputDiet, inputVaccineDate, inputAllergies, inputToys, inputNotes, inputOtherSpecies)
             .forEach { it.addTextChangedListener(watcher) }
 
-        // Save Button
-        findViewById<Button>(R.id.buttonSavePet).setOnClickListener {
-            val name = inputPetName.text.toString().trim()
-            if (name.isEmpty()) {
-                Toast.makeText(this, "Pet name is required", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        // Clear a field's error as soon as the user edits it.
+        listOf(R.id.layoutPetName to inputPetName, R.id.layoutAge to inputAge, R.id.layoutWeight to inputWeight)
+            .forEach { (layoutId, input) ->
+                input.addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: Editable?) {
+                        findViewById<TextInputLayout>(layoutId).error = null
+                    }
+                })
             }
 
-            val petId: Long
-            if (editingPetId != -1L) {
-                val success = database.updatePet(
-                    editingPetId,
-                    name,
-                    getSelectedSpecies(),
-                    inputBreed.text.toString(),
-                    inputAge.text.toString().toIntOrNull() ?: 0,
-                    inputWeight.text.toString().toDoubleOrNull() ?: 0.0,
-                    inputDiet.text.toString(),
-                    inputVaccineDate.text.toString(),
-                    switchReminder.isChecked,
-                    inputAllergies.text.toString(),
-                    inputToys.text.toString(),
-                    inputNotes.text.toString()
-                )
-                petId = if (success) editingPetId else -1L
-            } else {
-                petId = database.savePet(
-                    name,
-                    getSelectedSpecies(),
-                    inputBreed.text.toString(),
-                    inputAge.text.toString().toIntOrNull() ?: 0,
-                    inputWeight.text.toString().toDoubleOrNull() ?: 0.0,
-                    inputDiet.text.toString(),
-                    inputVaccineDate.text.toString(),
-                    switchReminder.isChecked,
-                    inputAllergies.text.toString(),
-                    inputToys.text.toString(),
-                    inputNotes.text.toString()
-                )
+        setupAllergyChips()
+        inputAllergies.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (!s.isNullOrBlank()) noneChip().isChecked = false
             }
+        })
 
-            if (petId != -1L) {
-                database.savePetPhotos(petId, selectedPhotos)
-                
-                if (switchReminder.isChecked && inputVaccineDate.text.toString().isNotBlank()) {
-                    scheduleVaccinationReminder(petId, name, inputVaccineDate.text.toString())
+        findViewById<Button>(R.id.buttonSavePet).setOnClickListener { save() }
+    }
+
+    private fun showVaccineDatePicker() {
+        val calendar = Calendar.getInstance()
+        parseExpenseDate(inputVaccineDate.text.toString())?.let { calendar.time = it }
+        DatePickerDialog(this, { _, year, month, day ->
+            calendar.set(year, month, day)
+            inputVaccineDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.US).format(calendar.time))
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).apply {
+            if (inputVaccineDate.text.isNotBlank()) {
+                setButton(DatePickerDialog.BUTTON_NEUTRAL, "Clear") { _, _ -> inputVaccineDate.setText("") }
+            }
+        }.show()
+    }
+
+    private fun save() {
+        val name = inputPetName.text.toString().trim()
+        val ageText = inputAge.text.toString().trim()
+        val weightText = inputWeight.text.toString().trim()
+        val age = ageText.toIntOrNull()
+        val weight = weightText.toDoubleOrNull()
+
+        var valid = true
+        if (name.isEmpty()) {
+            findViewById<TextInputLayout>(R.id.layoutPetName).error = "Name is required"
+            valid = false
+        }
+        if (ageText.isNotEmpty() && (age == null || age !in 0..MAX_AGE)) {
+            findViewById<TextInputLayout>(R.id.layoutAge).error = "0-$MAX_AGE"
+            valid = false
+        }
+        if (weightText.isNotEmpty() && (weight == null || weight <= 0 || weight > MAX_WEIGHT_KG)) {
+            findViewById<TextInputLayout>(R.id.layoutWeight).error = "Enter a weight between 0 and $MAX_WEIGHT_KG kg"
+            valid = false
+        }
+        if (!valid) {
+            Toast.makeText(this, "Please fix the highlighted fields", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val saveButton = findViewById<Button>(R.id.buttonSavePet)
+        saveButton.isEnabled = false // Prevents a double tap from creating two pets.
+
+        val species = getSelectedSpecies()
+        val vaccineDate = inputVaccineDate.text.toString().trim()
+        val petId = if (editingPetId != -1L) {
+            val success = database.updatePet(
+                editingPetId, name, species, inputBreed.text.toString().trim(), age ?: 0, weight ?: 0.0,
+                inputDiet.text.toString().trim(), vaccineDate, switchReminder.isChecked,
+                allergiesValue(), inputToys.text.toString().trim(), inputNotes.text.toString().trim()
+            )
+            if (success) editingPetId else -1L
+        } else {
+            database.savePet(
+                name, species, inputBreed.text.toString().trim(), age ?: 0, weight ?: 0.0,
+                inputDiet.text.toString().trim(), vaccineDate, switchReminder.isChecked,
+                allergiesValue(), inputToys.text.toString().trim(), inputNotes.text.toString().trim()
+            )
+        }
+
+        if (petId == -1L) {
+            saveButton.isEnabled = true
+            Toast.makeText(this, "Couldn't save the pet. Please try again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        database.savePetPhotos(petId, selectedPhotos)
+        if (switchReminder.isChecked && vaccineDate.isNotBlank()) {
+            scheduleVaccinationReminder(petId, name, vaccineDate)
+        } else {
+            cancelVaccinationReminder(petId)
+        }
+
+        hasUnsavedChanges = false
+        Toast.makeText(this, if (editingPetId != -1L) "Changes saved" else "$name added", Toast.LENGTH_SHORT).show()
+        finish()
+    }
+
+    private fun confirmDiscardOrFinish() {
+        if (!hasUnsavedChanges) {
+            finish()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Discard changes?")
+            .setMessage("You have unsaved changes to this pet profile.")
+            .setNegativeButton("Keep editing", null)
+            .setPositiveButton("Discard") { _, _ -> finish() }
+            .show()
+    }
+
+
+    // region Allergies
+
+    private val allergyChips: List<Chip>
+        get() = (0 until chipGroupAllergies.childCount).map { chipGroupAllergies.getChildAt(it) as Chip }
+
+    private fun noneChip(): Chip = allergyChips.first { it.text == NO_ALLERGIES }
+
+    private fun setupAllergyChips() {
+        allergyChips.forEach { chip ->
+            chip.setOnCheckedChangeListener { _, checked ->
+                // "None" and specific allergies can't both be selected.
+                if (checked && chip.text == NO_ALLERGIES) {
+                    allergyChips.filter { it !== chip }.forEach { it.isChecked = false }
+                    inputAllergies.setText("")
+                } else if (checked) {
+                    noneChip().isChecked = false
                 }
-                
-                Toast.makeText(this, "Pet profile saved successfully!", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Error saving pet profile", Toast.LENGTH_SHORT).show()
+                markChanged()
+                updateProgress()
             }
         }
+    }
+
+    /** Saved as one comma-separated value, e.g. "Chicken, Pollen, Lamb". */
+    private fun allergiesValue(): String {
+        val picked = allergyChips.filter { it.isChecked }.map { it.text.toString() }
+        if (NO_ALLERGIES in picked) return NO_ALLERGIES
+        val other = inputAllergies.text.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        return (picked + other).distinctBy { it.lowercase() }.joinToString(", ")
+    }
+
+    private fun setAllergies(stored: String) {
+        val other = mutableListOf<String>()
+        stored.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { part ->
+            val name = if (part.equals("No known allergies", ignoreCase = true)) NO_ALLERGIES else part
+            allergyChips.firstOrNull { it.text.toString().equals(name, ignoreCase = true) }
+                ?.let { it.isChecked = true } ?: other.add(part)
+        }
+        inputAllergies.setText(other.joinToString(", "))
+    }
+
+    // endregion
+
+    private fun markChanged() {
+        if (!isLoading) hasUnsavedChanges = true
     }
 
     private fun getSelectedSpecies(): String {
         return when (chipGroupSpecies.checkedChipId) {
             R.id.chipDog -> "Dog"
             R.id.chipCat -> "Cat"
-            R.id.chipOther -> inputOtherSpecies.text.toString().ifEmpty { "Other" }
+            R.id.chipBird -> "Bird"
+            R.id.chipRabbit -> "Rabbit"
+            R.id.chipOther -> inputOtherSpecies.text.toString().trim().ifEmpty { "Other" }
             else -> "Unknown"
         }
     }
 
     private fun updateProgress() {
         val fields = listOf(
-            inputPetName.text,
-            inputBreed.text,
-            inputAge.text,
-            inputWeight.text,
-            inputDiet.text,
-            inputVaccineDate.text,
-            inputAllergies.text,
-            inputToys.text,
-            inputNotes.text
+            inputPetName.text, inputBreed.text, inputAge.text, inputWeight.text, inputDiet.text,
+            inputVaccineDate.text, allergiesValue(), inputToys.text, inputNotes.text
         )
-        
         var count = fields.count { !it.isNullOrBlank() }
         if (chipGroupSpecies.checkedChipId != View.NO_ID) count++
-        
-        val total = 10
-        val percent = (count * 100) / total
-        
+        if (selectedPhotos.isNotEmpty()) count++
+
+        val percent = (count * 100) / 11
         progressCompletion.setProgress(percent, true)
         textCompletion.text = getString(R.string.add_pet_completion_text, percent)
     }
@@ -289,49 +465,58 @@ class AddEditPetActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
     }
 
-    private fun scheduleVaccinationReminder(petId: Long, petName: String, date: String) {
-        try {
-            val parts = date.split("/") // DD/MM/YYYY
-            val day = parts[0].toInt()
-            val month = parts[1].toInt() - 1
-            val year = parts[2].toInt()
-
-            val calendar = Calendar.getInstance().apply {
-                set(Calendar.YEAR, year)
-                set(Calendar.MONTH, month)
-                set(Calendar.DAY_OF_MONTH, day)
-                set(Calendar.HOUR_OF_DAY, 9)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-            }
-
-            if (calendar.before(Calendar.getInstance())) return
-
-            val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
-            val intent = android.content.Intent(this, ReminderReceiver::class.java).apply {
-                putExtra("PET_ID", petId)
-                putExtra("PET_NAME", petName)
-                putExtra("TYPE", "VACCINE")
-            }
-            
-            // Unique ID for pet vaccination (using petId with offset to avoid conflict with tasks)
-            val requestCode = petId.toInt() + 10000 
-            val pendingIntent = android.app.PendingIntent.getBroadcast(
-                this, requestCode, intent, 
-                android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-                } else {
-                    alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-                }
-            } else {
-                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-            }
-        } catch (e: Exception) {
-            // Parsing error
+    private fun reminderIntent(petId: Long, petName: String? = null): PendingIntent? {
+        val intent = Intent(this, ReminderReceiver::class.java).apply {
+            putExtra("PET_ID", petId)
+            petName?.let { putExtra("PET_NAME", it) }
+            putExtra("TYPE", "VACCINE")
         }
+        // petId + 10000 keeps vaccine alarms apart from task alarms.
+        return PendingIntent.getBroadcast(
+            this, petId.toInt() + 10000, intent,
+            PendingIntent.FLAG_IMMUTABLE or if (petName != null) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
+        )
+    }
+
+    private fun scheduleVaccinationReminder(petId: Long, petName: String, date: String) {
+        val parsed = parseExpenseDate(date) ?: return
+        val calendar = Calendar.getInstance().apply {
+            time = parsed
+            set(Calendar.HOUR_OF_DAY, 9)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }
+        if (calendar.before(Calendar.getInstance())) return
+
+        val pendingIntent = reminderIntent(petId, petName) ?: return
+        val alarmManager = getSystemService(AlarmManager::class.java) ?: return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            }
+        } catch (_: SecurityException) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+        }
+    }
+
+    private fun cancelVaccinationReminder(petId: Long) {
+        val pending = reminderIntent(petId) ?: return
+        getSystemService(AlarmManager::class.java)?.cancel(pending)
+        pending.cancel()
+    }
+
+    private fun formatNumber(value: Double): String =
+        if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
+
+    private fun Int.dp(): Int = (this * resources.displayMetrics.density).roundToInt()
+
+    companion object {
+        const val NO_ALLERGIES = "None"
+
+        private const val MAX_PHOTOS = 5
+        private const val MAX_AGE = 40
+        private const val MAX_WEIGHT_KG = 200
     }
 }

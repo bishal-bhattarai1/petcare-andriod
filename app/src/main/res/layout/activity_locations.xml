@@ -53,8 +53,8 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="20dp"
         android:src="@drawable/ic_add_black"
-        app:backgroundTint="@color/black"
+        app:backgroundTint="@color/md_secondary"
         app:maxImageSize="32dp"
-        app:tint="@color/white" />
+        app:tint="@color/md_on_secondary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

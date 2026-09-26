@@ -8,10 +8,11 @@
     android:background="@color/app_bg">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/expensesScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="100dp">
+        android:paddingBottom="112dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -20,49 +21,109 @@
             android:padding="16dp">
 
             <!-- Header -->
-            <RelativeLayout
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp">
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Spending"
-                    android:textColor="@color/app_text_primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Spending"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textExpensesSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/app_text_secondary"
+                        android:textSize="13sp"
+                        tools:text="All pets · This month" />
+                </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/buttonAddExpense"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_alignParentEnd="true"
+                    android:id="@+id/buttonExportExpenses"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:clickable="true"
+                    android:contentDescription="Download expenses"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
                     app:cardBackgroundColor="@color/card_bg"
-                    app:cardCornerRadius="20dp"
+                    app:cardCornerRadius="22dp"
                     app:cardElevation="0dp"
-                    app:strokeWidth="0dp">
+                    app:strokeColor="@color/md_outline_variant"
+                    app:strokeWidth="1dp">
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center"
-                        android:src="@android:drawable/ic_input_add"
-                        app:tint="@color/black" />
+                        android:src="@drawable/ic_download"
+                        app:tint="@color/app_text_primary"
+                        tools:ignore="ContentDescription" />
                 </com.google.android.material.card.MaterialCardView>
-            </RelativeLayout>
 
-            <!-- Total Spend Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/buttonAddExpense"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="10dp"
+                    android:clickable="true"
+                    android:contentDescription="Add expense"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/card_bg"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/md_outline_variant"
+                    app:strokeWidth="1dp">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_add_black"
+                        app:tint="@color/app_text_primary"
+                        tools:ignore="ContentDescription" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- Period filter -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupPeriod"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleLine="true"
+                    app:singleSelection="true" />
+            </HorizontalScrollView>
+
+            <!-- Total spend: primary colour pair, so it stays readable in light and dark themes -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                app:cardBackgroundColor="@color/black"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@color/md_primary"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -72,10 +133,12 @@
                     android:padding="20dp">
 
                     <TextView
+                        android:id="@+id/textTotalLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Total Spending"
-                        android:textColor="#BDBDBD"
+                        android:alpha="0.85"
+                        android:text="Total spending"
+                        android:textColor="@color/md_on_primary"
                         android:textSize="13sp" />
 
                     <TextView
@@ -84,15 +147,132 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="$0.00"
-                        android:textColor="@color/white"
-                        android:textSize="28sp"
+                        android:textColor="@color/md_on_primary"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="16dp"
+                        android:alpha="0.2"
+                        android:background="@color/md_on_primary" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.8"
+                                android:text="Transactions"
+                                android:textColor="@color/md_on_primary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/textStatCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="0"
+                                android:textColor="@color/md_on_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.8"
+                                android:text="Average"
+                                android:textColor="@color/md_on_primary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/textStatAverage"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="$0.00"
+                                android:textColor="@color/md_on_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.8"
+                                android:text="Top category"
+                                android:textColor="@color/md_on_primary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/textStatTopCategory"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:maxLines="1"
+                                android:text="-"
+                                android:textColor="@color/md_on_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Category breakdown -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/md_outline_variant"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="By category"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <LinearLayout
                         android:id="@+id/layoutCategoryBar"
                         android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="18dp"
+                        android:layout_height="10dp"
+                        android:layout_marginTop="12dp"
                         android:background="@drawable/bg_expense_bar_track"
                         android:clipToOutline="true"
                         android:orientation="horizontal" />
@@ -101,65 +281,88 @@
                         android:id="@+id/layoutCategoryLegend"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="8dp"
                         android:orientation="vertical" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Expenses Search Bar -->
+            <!-- Search -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="20dp"
                 app:boxBackgroundColor="@color/app_input_bg"
                 app:boxCornerRadiusBottomEnd="14dp"
                 app:boxCornerRadiusBottomStart="14dp"
                 app:boxCornerRadiusTopEnd="14dp"
                 app:boxCornerRadiusTopStart="14dp"
                 app:boxStrokeWidth="0dp"
+                app:endIconMode="clear_text"
+                app:endIconTint="@color/app_text_secondary"
                 app:hintEnabled="false"
                 app:startIconDrawable="@android:drawable/ic_menu_search"
                 app:startIconTint="@color/app_text_secondary">
+
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editExpensesSearch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Search descriptions or pet names..."
+                    android:hint="Search description, pet or category"
+                    android:imeOptions="actionSearch"
                     android:inputType="text"
                     android:paddingVertical="14dp"
                     android:textColor="@color/app_text_primary"
+                    android:textColorHint="@color/app_text_secondary"
                     android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Pet Filter Chips -->
+            <!-- Pet filter -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:scrollbars="none">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupPets"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleLine="true"
                     app:singleSelection="true" />
             </HorizontalScrollView>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Recent Transactions"
-                android:textColor="@color/app_text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Transactions"
+                    android:textColor="@color/app_text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textSwipeHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Swipe left to delete"
+                    android:textColor="@color/app_text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewExpenses"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="4dp"
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/item_expense_transaction" />
 
@@ -168,15 +371,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
+                android:drawablePadding="16dp"
                 android:gravity="center"
                 android:padding="20dp"
-                android:drawablePadding="16dp"
-                app:drawableTopCompat="@drawable/ic_nav_expenses"
-                app:drawableTint="@color/indicator_grey"
                 android:text="No expenses yet. Tap + to add one."
                 android:textColor="@color/app_text_secondary"
                 android:textSize="14sp"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:drawableTint="@color/md_outline"
+                app:drawableTopCompat="@drawable/ic_nav_expenses" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
@@ -186,7 +389,7 @@
         android:layout_width="match_parent"
         android:layout_height="104dp"
         android:layout_gravity="bottom"
-        android:backgroundTint="@color/white"
+        android:backgroundTint="@color/md_surface_container"
         app:fabAlignmentMode="center"
         app:fabCradleMargin="12dp"
         app:fabCradleRoundedCornerRadius="32dp"
@@ -272,8 +475,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_add_black"
-        app:backgroundTint="@color/black"
-        app:tint="@color/white"
+        app:backgroundTint="@color/md_secondary"
+        app:tint="@color/md_on_secondary"
         app:fabSize="normal"
         app:layout_anchor="@id/bottomAppBar"
         app:maxImageSize="36dp"
