@@ -184,18 +184,9 @@ class TasksPageController(
     private fun matchesCategory(task: CareTask, keywords: List<String>): Boolean =
         keywords.isEmpty() || keywords.any { task.category.contains(it, ignoreCase = true) }
 
-    /** Weekly routines only appear on their chosen weekdays; everything else is daily. */
-    private fun isScheduledOn(task: CareTask, calendar: Calendar): Boolean {
-        if (!task.repeatType.equals("Weekly", ignoreCase = true)) return true
-        val days = task.weekDays.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-        if (days.isEmpty()) return true
-        val dayCode = SimpleDateFormat("EEE", Locale.US).format(calendar.time)
-        return days.any { it.equals(dayCode, ignoreCase = true) }
-    }
-
     fun render() {
         val petTasks = database.getCareTasks(selectedPetId, selectedDateKey())
-            .filter { isScheduledOn(it, selectedCalendar) }
+            .filter { TaskSchedule.isDueOn(it, selectedCalendar) }
 
         // Progress for the selected day across all categories
         val totalCount = petTasks.size
@@ -255,7 +246,7 @@ class TasksPageController(
             .setTitle("Delete Routine?")
             .setMessage("Remove \"${task.description}\" permanently?")
             .setPositiveButton("Delete") { _, _ ->
-                database.deleteTask(task.id)
+                if (database.deleteTask(task.id)) TaskReminder.cancel(activity, task.id)
                 render()
             }
             .setNegativeButton("Cancel", null)
@@ -374,13 +365,16 @@ class TasksPageController(
                     Toast.makeText(activity, "Task title is required", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
+                val newTime = timeInput.text.toString().trim()
                 val saved = database.updateTaskDetails(
                     task.id,
                     description,
-                    timeInput.text.toString().trim(),
+                    newTime,
                     suppliesInput.text.toString().trim(),
                     notesInput.text.toString().trim()
                 )
+                // Move the reminder to the new time.
+                if (saved) TaskReminder.schedule(activity, task.copy(description = description, scheduledTime = newTime))
                 Toast.makeText(activity, if (saved) "Changes saved" else "Could not save task", Toast.LENGTH_SHORT).show()
                 render()
             }

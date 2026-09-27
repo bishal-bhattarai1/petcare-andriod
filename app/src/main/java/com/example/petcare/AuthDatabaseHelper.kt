@@ -1504,14 +1504,22 @@ class AuthDatabaseHelper(context: Context) :
         }
     }
 
-    fun saveHealthcareRecord(petId: Long, type: String, date: String, notes: String): Boolean {
+    fun saveHealthcareRecord(petId: Long, type: String, date: String, notes: String): Boolean =
+        addHealthcareRecord(petId, type, date, notes) != -1L
+
+    /** Inserts a health record and returns its id (-1 on failure), so reminders can be attached to it. */
+    fun addHealthcareRecord(petId: Long, type: String, date: String, notes: String): Long {
         val values = ContentValues().apply {
             put("pet_id", petId)
             put("type", type)
             put("date", date)
             put("notes", notes)
         }
-        return writableDatabase.insert("healthcare_history", null, values) != -1L
+        return try {
+            writableDatabase.insert("healthcare_history", null, values)
+        } catch (_: Exception) {
+            -1L
+        }
     }
 
     fun getHealthcareHistory(petId: Long): List<HealthcareRecord> {

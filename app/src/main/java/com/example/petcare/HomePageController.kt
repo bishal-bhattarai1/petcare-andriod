@@ -115,7 +115,7 @@ class HomePageController(
         val monthSpend = database.getExpenses()
             .filter { parseExpenseDate(it.date)?.let { d -> !d.before(monthStart) } ?: false }
             .sumOf { it.amount }
-        return HomeData(database.getAllPets(), database.getCareTasks(), monthSpend)
+        return HomeData(database.getAllPets(), database.getCareTasks().filter { TaskSchedule.isDueToday(it) }, monthSpend)
     }
 
     // endregion

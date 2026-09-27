@@ -32,6 +32,8 @@ class LocationsActivity : AppCompatActivity() {
     private var selectedLng: Double = 0.0
     private var pendingName: String = ""
     private var pendingCategory: String = ""
+    /** null = show all categories. */
+    private var placeFilter: PlaceCategory? = null
     private var pendingAddress: String = ""
     private var activeDialog: AlertDialog? = null
 
@@ -72,6 +74,8 @@ class LocationsActivity : AppCompatActivity() {
             insets
         }
 
+        setupPlaceFilter()
+
         findViewById<FloatingActionButton>(R.id.fabAddLocation).setOnClickListener {
             showAddLocationDialog(isResumeFromMap = false)
         }
@@ -84,8 +88,42 @@ class LocationsActivity : AppCompatActivity() {
         loadLocations()
     }
 
+    private fun setupPlaceFilter() {
+        val group = findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupPlaceFilter)
+        (listOf<PlaceCategory?>(null) + PlaceCategory.entries).forEach { category ->
+            val chip = placeChip(category?.label ?: "All", category)
+            group.addView(chip)
+            if (category == null) group.check(chip.id)
+        }
+        group.setOnCheckedStateChangeListener { g, ids ->
+            val chip = ids.firstOrNull()?.let { g.findViewById<com.google.android.material.chip.Chip>(it) }
+                ?: return@setOnCheckedStateChangeListener
+            placeFilter = chip.tag as? PlaceCategory
+            loadLocations()
+        }
+    }
+
+    private fun placeChip(label: String, category: PlaceCategory?) =
+        com.google.android.material.chip.Chip(this).apply {
+            id = View.generateViewId()
+            tag = category
+            text = label
+            isCheckable = true
+            isCheckedIconVisible = false
+            chipStrokeWidth = resources.displayMetrics.density
+            setTextColor(ContextCompat.getColorStateList(this@LocationsActivity, R.color.chip_selectable_text))
+            chipBackgroundColor = ContextCompat.getColorStateList(this@LocationsActivity, R.color.chip_selectable_bg)
+            chipStrokeColor = ContextCompat.getColorStateList(this@LocationsActivity, R.color.chip_selectable_stroke)
+            category?.let {
+                chipIcon = ContextCompat.getDrawable(this@LocationsActivity, it.icon)
+                chipIconTint = ContextCompat.getColorStateList(this@LocationsActivity, R.color.chip_selectable_text)
+                chipIconSize = 16 * resources.displayMetrics.density
+            }
+        }
+
     private fun loadLocations() {
         val locations = database.getLocations()
+            .filter { placeFilter == null || PlaceCategory.from(it.category) == placeFilter }
         val layout = findViewById<LinearLayout>(R.id.layoutLocationList)
         layout.removeAllViews()
 
@@ -123,11 +161,25 @@ class LocationsActivity : AppCompatActivity() {
         }
         container.addView(nameText)
 
+        val category = PlaceCategory.from(loc.category)
         val catText = TextView(this).apply {
-            text = loc.category
-            setTextColor(ContextCompat.getColor(this@LocationsActivity, R.color.app_text_secondary))
+            text = category.label
+            setTextColor(ContextCompat.getColor(this@LocationsActivity, category.fg))
             textSize = 12f
-            setPadding(0, 2.dp(), 0, 0)
+            typeface = context.figtree(android.graphics.Typeface.BOLD)
+            setBackgroundResource(R.drawable.bg_task_badge_done)
+            backgroundTintList = ContextCompat.getColorStateList(this@LocationsActivity, category.bg)
+            setPadding(10.dp(), 4.dp(), 10.dp(), 4.dp())
+            compoundDrawablePadding = 4.dp()
+            setCompoundDrawablesRelativeWithIntrinsicBounds(
+                ContextCompat.getDrawable(this@LocationsActivity, category.icon)?.mutate()?.apply {
+                    setBounds(0, 0, 14.dp(), 14.dp())
+                    setTint(ContextCompat.getColor(this@LocationsActivity, category.fg))
+                }, null, null, null
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 6.dp() }
         }
         container.addView(catText)
 
@@ -224,10 +276,20 @@ class LocationsActivity : AppCompatActivity() {
             hint = "Location Name (e.g. Happy Vet)"
             if (pendingName.isNotBlank()) setText(pendingName)
         }
-        val categoryInput = EditText(this).apply {
-            hint = "Category (Vet, Salon, Park)"
-            if (pendingCategory.isNotBlank()) setText(pendingCategory)
+        val categoryGroup = com.google.android.material.chip.ChipGroup(this).apply {
+            isSingleSelection = true
+            isSelectionRequired = true
+            setPadding(0, 8.dp(), 0, 4.dp())
+            val initial = if (pendingCategory.isNotBlank()) PlaceCategory.from(pendingCategory) else PlaceCategory.VET
+            PlaceCategory.entries.forEach { category ->
+                val chip = placeChip(category.label, category)
+                addView(chip)
+                if (category == initial) check(chip.id)
+            }
         }
+        fun selectedCategory(): String =
+            (categoryGroup.findViewById<com.google.android.material.chip.Chip>(categoryGroup.checkedChipId)?.tag as? PlaceCategory
+                ?: PlaceCategory.OTHER).label
         val addrInput = EditText(this).apply {
             hint = "Address or Place Name"
             if (pendingAddress.isNotBlank()) setText(pendingAddress)
@@ -244,7 +306,7 @@ class LocationsActivity : AppCompatActivity() {
             ).apply { topMargin = 12.dp() }
             setOnClickListener {
                 pendingName = nameInput.text.toString().trim()
-                pendingCategory = categoryInput.text.toString().trim()
+                pendingCategory = selectedCategory()
                 pendingAddress = addrInput.text.toString().trim()
 
                 activeDialog?.dismiss()
@@ -261,7 +323,13 @@ class LocationsActivity : AppCompatActivity() {
         }
 
         form.addView(nameInput)
-        form.addView(categoryInput)
+        form.addView(TextView(this).apply {
+            text = "Type of place"
+            setTextColor(ContextCompat.getColor(this@LocationsActivity, R.color.app_text_secondary))
+            textSize = 12f
+            setPadding(4.dp(), 12.dp(), 0, 0)
+        })
+        form.addView(categoryGroup)
         form.addView(addrInput)
         form.addView(btnPickOnMap)
 
@@ -270,7 +338,7 @@ class LocationsActivity : AppCompatActivity() {
             .setView(form)
             .setPositiveButton("Save Location") { dialog, _ ->
                 val name = nameInput.text.toString().trim()
-                val cat = categoryInput.text.toString().trim()
+                val cat = selectedCategory()
                 val addr = addrInput.text.toString().trim()
 
                 if (name.isBlank() || addr.isBlank()) {

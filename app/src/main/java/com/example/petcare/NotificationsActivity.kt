@@ -96,7 +96,7 @@ class NotificationsActivity : AppCompatActivity() {
     private fun loadReminders() {
         if (executor.isShutdown) return
         executor.execute {
-            val allTasks = database.getCareTasks()
+            val allTasks = database.getCareTasks().filter { TaskSchedule.isDueToday(it) }
             val medicalHistory = database.getAllHealthcareHistory()
             val reminders = buildReminders(allTasks)
             runOnUiThread {

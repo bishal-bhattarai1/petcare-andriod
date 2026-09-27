@@ -96,7 +96,7 @@ class ChecklistAdapter(
 
             meta.text = listOfNotNull(
                 task.scheduledTime.ifBlank { "Anytime" },
-                task.repeatType.takeIf { it.isNotBlank() },
+                TaskSchedule.label(task),
                 task.petName.takeIf { showPetName && it.isNotBlank() }
             ).joinToString(" · ")
 
@@ -146,6 +146,11 @@ class ChecklistAdapter(
                 card.setOnClickListener { onEdit(task) }
             }
             more.setOnClickListener { showMenu(it, task) }
+            card.setOnLongClickListener {
+                it.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                showMenu(more, task)
+                true
+            }
         }
 
         private fun bindWeekly(task: CareTask) {

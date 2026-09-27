@@ -54,6 +54,8 @@
     <color name="expense_grooming_bg">#22304F</color>
     <color name="expense_toys">#F8C170</color>
     <color name="expense_toys_bg">#4A3518</color>
+    <color name="expense_meds">#CDB0F2</color>
+    <color name="expense_meds_bg">#382A4C</color>
 
     <color name="hero_ring_track">#330B2A33</color>
 </resources>

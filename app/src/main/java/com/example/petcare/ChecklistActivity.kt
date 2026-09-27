@@ -51,6 +51,7 @@ class ChecklistActivity : AppCompatActivity() {
     /** Everything loaded from the database; pet filter and search are applied in memory. */
     private var allTasks: List<CareTask> = emptyList()
     private var pets: List<PetOption> = emptyList()
+    private var upcomingRecords: List<HealthcareRecord> = emptyList()
 
     private lateinit var adapter: ChecklistAdapter
     private lateinit var recycler: RecyclerView
@@ -161,9 +162,18 @@ class ChecklistActivity : AppCompatActivity() {
     private fun loadData() {
         runInBackground({
             val loadedPets = database.getPetOptions()
-            val loadedTasks = database.getCareTasks(null)
-            loadedPets to loadedTasks
-        }) { (loadedPets, loadedTasks) ->
+            val loadedTasks = database.getCareTasks(null).filter { TaskSchedule.isDueToday(it) }
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val horizon = today + UPCOMING_DAYS * 24L * 60 * 60 * 1000
+            val upcoming = database.getAllHealthcareHistory()
+                .mapNotNull { r -> parseExpenseDate(r.date)?.time?.takeIf { it in today..horizon }?.let { r to it } }
+                .sortedBy { it.second }
+                .map { it.first }
+            Triple(loadedPets, loadedTasks, upcoming)
+        }) { (loadedPets, loadedTasks, upcoming) ->
+            upcomingRecords = upcoming
             if (loadedPets != pets) {
                 pets = loadedPets
                 if (selectedPetId != null && pets.none { it.id == selectedPetId }) selectedPetId = null
@@ -186,6 +196,7 @@ class ChecklistActivity : AppCompatActivity() {
 
         adapter.showPetName = selectedPetId == null && pets.size > 1
         adapter.submitList(sorted)
+        renderUpcoming()
         updateProgress(petFiltered)
 
         emptyText.text = when {
@@ -193,6 +204,37 @@ class ChecklistActivity : AppCompatActivity() {
             else -> "No routines match \"$searchQuery\"."
         }
         emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    /** Vet visits, vaccinations etc. in the next few weeks, shown above the routines. */
+    private fun renderUpcoming() {
+        val card = findViewById<View>(R.id.cardUpcomingAppointments)
+        val visible = upcomingRecords.filter { selectedPetId == null || it.petId == selectedPetId }
+        if (visible.isEmpty()) {
+            card.visibility = View.GONE
+            return
+        }
+        val first = visible.first()
+        val days = parseExpenseDate(first.date)?.let {
+            java.util.concurrent.TimeUnit.MILLISECONDS.toDays(it.time - Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis).toInt()
+        } ?: 0
+        val whenText = when (days) {
+            0 -> "today"
+            1 -> "tomorrow"
+            else -> "in $days days"
+        }
+        card.visibility = View.VISIBLE
+        findViewById<TextView>(R.id.textUpcomingTitle).text = "${first.petName}'s ${first.type.lowercase()} $whenText"
+        findViewById<TextView>(R.id.textUpcomingSubtitle).text = listOfNotNull(
+            displayDate(first.date),
+            first.notes.takeIf { it.isNotBlank() },
+            (visible.size - 1).takeIf { it > 0 }?.let { "+$it more upcoming" }
+        ).joinToString(" · ")
+        card.setOnClickListener {
+            startActivity(Intent(this, PetDetailsActivity::class.java).putExtra("EXTRA_PET_ID", first.petId))
+        }
     }
 
     private fun CareTask.matches(query: String): Boolean =
@@ -310,6 +352,7 @@ class ChecklistActivity : AppCompatActivity() {
             .setPositiveButton("Delete") { _, _ ->
                 runInBackground({ database.deleteTask(task.id) }) { deleted ->
                     if (deleted) {
+                        TaskReminder.cancel(this, task.id)
                         allTasks = allTasks.filterNot { it.id == task.id }
                         applyFilters()
                         showMessage("Routine deleted")
@@ -360,6 +403,7 @@ class ChecklistActivity : AppCompatActivity() {
                     updateLocalTask(task.id) {
                         it.copy(description = description, scheduledTime = time, requiredSupplies = supplies, taskNotes = notes)
                     }
+                    allTasks.firstOrNull { it.id == task.id }?.let { TaskReminder.schedule(this, it) }
                     showMessage("Changes saved")
                 } else {
                     showMessage("Couldn't save changes. Please try again.")
@@ -469,5 +513,6 @@ class ChecklistActivity : AppCompatActivity() {
         const val EXTRA_PET_NAME = "extra_pet_name"
         private const val STATE_PET_ID = "state_pet_id"
         private const val SEARCH_DEBOUNCE_MS = 250L
+        private const val UPCOMING_DAYS = 30
     }
 }

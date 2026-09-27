@@ -13,3 +13,18 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Secrets & signing
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+secrets.properties
+google-services.json
+.env
+
+# Logs / tool output
+*.log
+.kotlin/
+.artifacts/

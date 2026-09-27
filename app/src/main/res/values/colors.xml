@@ -99,6 +99,8 @@
     <color name="expense_grooming_bg">#DCE5FB</color>
     <color name="expense_toys">#B8741A</color>
     <color name="expense_toys_bg">#FFE8C7</color>
+    <color name="expense_meds">#7A4FB5</color>
+    <color name="expense_meds_bg">#EEE3FA</color>
 
     <!-- Home "Today" card: progress ring track drawn on md_primary -->
     <color name="hero_ring_track">#33FFFFFF</color>

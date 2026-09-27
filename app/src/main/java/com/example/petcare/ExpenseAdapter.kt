@@ -102,11 +102,13 @@ data class ExpenseCategoryStyle(
 )
 
 /** The fixed set of expense categories, in display order. */
-val EXPENSE_CATEGORIES = listOf("Food", "Vet", "Grooming", "Toys")
+val EXPENSE_CATEGORIES = listOf("Food", "Vet", "Medication", "Grooming", "Toys")
 
 fun String.expenseCategoryStyle(): ExpenseCategoryStyle {
     return when (lowercase()) {
-        "vet" -> ExpenseCategoryStyle("Vet", R.color.expense_vet, R.color.expense_vet_bg, R.drawable.ic_meds)
+        "vet" -> ExpenseCategoryStyle("Vet", R.color.expense_vet, R.color.expense_vet_bg, R.drawable.ic_status_check)
+        "medication", "medicine", "meds" ->
+            ExpenseCategoryStyle("Medication", R.color.expense_meds, R.color.expense_meds_bg, R.drawable.ic_meds)
         "grooming" -> ExpenseCategoryStyle("Grooming", R.color.expense_grooming, R.color.expense_grooming_bg, R.drawable.ic_groom)
         "toys" -> ExpenseCategoryStyle("Toys", R.color.expense_toys, R.color.expense_toys_bg, R.drawable.ic_paw)
         else -> ExpenseCategoryStyle("Food", R.color.expense_food, R.color.expense_food_bg, R.drawable.ic_bowl)

@@ -69,8 +69,21 @@ class AddTaskActivity : AppCompatActivity() {
             }
 
             val expense = expenseInput.text.toString().trim().toDoubleOrNull() ?: 0.0
-            val repeatType = if (repeatGroup.checkedChipId == R.id.chipWeekly) "Weekly" else "Daily"
-            val weekDays = if (repeatType == "Weekly") selectedWeekDays.joinToString(",") else ""
+            val repeatType = when (repeatGroup.checkedChipId) {
+                R.id.chipWeekly -> "Weekly"
+                R.id.chipMonthly -> "Monthly"
+                else -> "Daily"
+            }
+            val monthDay = findViewById<TextInputEditText>(R.id.inputMonthDay).text?.toString()?.trim()?.toIntOrNull()
+            if (repeatType == "Monthly" && (monthDay == null || monthDay !in 1..31)) {
+                findViewById<TextInputLayout>(R.id.layoutMonthDay).error = "Enter a day from 1 to 31"
+                return@setOnClickListener
+            }
+            val weekDays = when (repeatType) {
+                "Weekly" -> selectedWeekDays.joinToString(",")
+                "Monthly" -> monthDay.toString() // Day of the month, e.g. "15".
+                else -> ""
+            }
             val scheduledTime = findViewById<TextInputEditText>(R.id.inputTaskTime).text?.toString().orEmpty()
             val reminderEnabled = findViewById<android.widget.CheckBox>(R.id.checkReminder).isChecked
             val supplies = findViewById<TextInputEditText>(R.id.inputSupplies).text?.toString().orEmpty()
@@ -94,7 +107,7 @@ class AddTaskActivity : AppCompatActivity() {
 
             if (taskId != -1L) {
                 if (reminderEnabled && scheduledTime.isNotBlank()) {
-                    checkNotificationPermissionAndSchedule(taskId, scheduledTime)
+                    database.getCareTasks(pet.id).find { it.id == taskId }?.let { TaskReminder.schedule(this, it) }
                 }
                 Toast.makeText(this, "Care routine saved!", Toast.LENGTH_SHORT).show()
                 finish()
@@ -102,62 +115,6 @@ class AddTaskActivity : AppCompatActivity() {
                 Toast.makeText(this, "Could not save care routine", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun checkNotificationPermissionAndSchedule(taskId: Long, time: String) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val permission = android.Manifest.permission.POST_NOTIFICATIONS
-            if (androidx.core.content.ContextCompat.checkSelfPermission(this, permission) != 
-                android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                scheduleReminder(taskId, time)
-            } else {
-                scheduleReminder(taskId, time)
-            }
-        } else {
-            scheduleReminder(taskId, time)
-        }
-    }
-
-    private fun scheduleReminder(taskId: Long, time: String) {
-        try {
-            val calendar = Calendar.getInstance()
-            val parts = time.split(" ") 
-            val timeParts = parts[0].split(":")
-            var hour = timeParts[0].toInt()
-            val minute = timeParts[1].toInt()
-            val amPm = parts[1]
-
-            if (amPm.equals("PM", true) && hour < 12) hour += 12
-            if (amPm.equals("AM", true) && hour == 12) hour = 0
-
-            val reminderTime = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, hour)
-                set(Calendar.MINUTE, minute)
-                set(Calendar.SECOND, 0)
-                if (before(Calendar.getInstance())) {
-                    add(Calendar.DATE, 1)
-                }
-            }
-
-            val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
-            val intent = android.content.Intent(this, ReminderReceiver::class.java).apply {
-                putExtra("TASK_ID", taskId)
-            }
-            val pendingIntent = android.app.PendingIntent.getBroadcast(
-                this, taskId.toInt(), intent, 
-                android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime.timeInMillis, pendingIntent)
-                } else {
-                    alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, reminderTime.timeInMillis, pendingIntent)
-                }
-            } else {
-                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime.timeInMillis, pendingIntent)
-            }
-        } catch (e: Exception) {}
     }
 
     private fun setupPetPicker() {
@@ -235,8 +192,12 @@ class AddTaskActivity : AppCompatActivity() {
         weeklyDaysLayout.visibility = View.GONE
 
         val repeatGroup = findViewById<ChipGroup>(R.id.chipGroupRepeat)
+        val monthDayLayout = findViewById<TextInputLayout>(R.id.layoutMonthDay)
+        findViewById<TextInputEditText>(R.id.inputMonthDay).setText(Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString())
         repeatGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             weeklyDaysLayout.visibility = if (checkedIds.contains(R.id.chipWeekly)) View.VISIBLE else View.GONE
+            monthDayLayout.visibility = if (checkedIds.contains(R.id.chipMonthly)) View.VISIBLE else View.GONE
+            monthDayLayout.error = null
         }
 
         setupTimePicker()

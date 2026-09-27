@@ -64,7 +64,7 @@ class TaskAdapter(
             } else if (task.taskNotes.isNotBlank()) {
                 append(" • ").append(task.taskNotes)
             } else if (task.repeatType.isNotBlank()) {
-                append(" • ").append(task.repeatType)
+                append(" • ").append(TaskSchedule.label(task))
             }
         }
         holder.schedule.text = scheduleText
@@ -110,38 +110,45 @@ class TaskAdapter(
         holder.card.setOnClickListener { onClick(task) }
         holder.checkbox.setOnClickListener { onComplete(task) }
 
-        // Popup Menu on Three Dots
-        holder.moreOptions.setOnClickListener { view ->
-            val popup = PopupMenu(ctx, view)
-            if (!task.isCompleted) popup.menu.add(0, 1, 0, "✓ Mark Complete")
-            popup.menu.add(0, 2, 1, "📋 Open Checklist")
-            if (onEdit != null && !task.isCompleted) {
-                popup.menu.add(0, 4, 2, "✏️ Edit Routine")
-            }
-            popup.menu.add(0, 3, 3, "🗑️ Delete Routine")
-            popup.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    1 -> {
-                        onComplete(task)
-                        true
-                    }
-                    2 -> {
-                        onClick(task)
-                        true
-                    }
-                    3 -> {
-                        onDelete(task)
-                        true
-                    }
-                    4 -> {
-                        onEdit?.invoke(task)
-                        true
-                    }
-                    else -> false
-                }
-            }
-            popup.show()
+        // Quick actions: the ⋮ button, or long-press anywhere on the row.
+        holder.moreOptions.setOnClickListener { showActions(it, task) }
+        holder.card.setOnLongClickListener {
+            it.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+            showActions(holder.moreOptions, task)
+            true
         }
+    }
+
+    private fun showActions(anchor: View, task: CareTask) {
+        val popup = PopupMenu(anchor.context, anchor)
+        if (!task.isCompleted) popup.menu.add(0, 1, 0, "✓ Mark Complete")
+        popup.menu.add(0, 2, 1, "📋 Open Checklist")
+        if (onEdit != null && !task.isCompleted) {
+            popup.menu.add(0, 4, 2, "✏️ Edit Routine")
+        }
+        popup.menu.add(0, 3, 3, "🗑️ Delete Routine")
+        popup.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                1 -> {
+                    onComplete(task)
+                    true
+                }
+                2 -> {
+                    onClick(task)
+                    true
+                }
+                3 -> {
+                    onDelete(task)
+                    true
+                }
+                4 -> {
+                    onEdit?.invoke(task)
+                    true
+                }
+                else -> false
+            }
+        }
+        popup.show()
     }
 
     override fun getItemCount() = tasks.size

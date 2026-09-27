@@ -1,5 +1,13 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
+}
+
+// Secrets live in local.properties (gitignored) so they never reach GitHub.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
 }
 
 android {
@@ -14,6 +22,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        resValue(
+            "string",
+            "google_web_client_id",
+            localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")
+        )
+    }
+
+    buildFeatures {
+        resValues = true
     }
 
     buildTypes {

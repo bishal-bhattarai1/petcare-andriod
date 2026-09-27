@@ -43,9 +43,9 @@ object VaccineReminder {
     /** With a name it creates/updates the alarm intent; without one it only finds an existing one. */
     private fun pendingIntent(context: Context, petId: Long, petName: String?): PendingIntent? {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
-            putExtra("PET_ID", petId)
-            petName?.let { putExtra("PET_NAME", it) }
-            putExtra("TYPE", "VACCINE")
+            putExtra(ReminderReceiver.EXTRA_PET_ID, petId)
+            petName?.let { putExtra(ReminderReceiver.EXTRA_PET_NAME, it) }
+            putExtra(ReminderReceiver.EXTRA_TYPE, ReminderReceiver.TYPE_VACCINE)
         }
         // petId + 10000 keeps vaccine alarms apart from task alarms.
         val flags = PendingIntent.FLAG_IMMUTABLE or

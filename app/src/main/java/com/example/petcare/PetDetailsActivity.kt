@@ -389,7 +389,9 @@ class PetDetailsActivity : AppCompatActivity() {
             .setMessage("Do you want to delete the ${record.type.ifBlank { "health" }} record from ${displayDate(record.date)}?")
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
-                runInBackground({ database.deleteHealthcareRecord(record.id) }) { deleted ->
+                runInBackground({
+                    database.deleteHealthcareRecord(record.id).also { if (it) RecordReminder.cancel(this, record.id) }
+                }) { deleted ->
                     showMessage(if (deleted) "Record deleted" else "Couldn't delete record.")
                     if (deleted) loadProfile()
                 }
@@ -533,7 +535,10 @@ class PetDetailsActivity : AppCompatActivity() {
                 ?.let { SimpleDateFormat("dd/MM/yyyy", Locale.US).format(it.time) }
             dialog.dismiss()
             runInBackground({
-                val saved = database.saveHealthcareRecord(petId, type, date, notes)
+                val recordId = database.addHealthcareRecord(petId, type, date, notes)
+                val saved = recordId != -1L
+                // A future appointment gets a reminder; a future vaccination becomes "Next vaccination".
+                if (saved) HealthSchedule.onRecordAdded(this, database, petId, recordId, type, date)
                 if (saved && nextDueDate != null && database.updatePetVaccineDate(petId, nextDueDate)) {
                     val remind = database.getPetById(petId)?.getAsInteger("reminder_enabled") == 1
                     if (remind) VaccineReminder.schedule(this, petId, petName, nextDueDate)

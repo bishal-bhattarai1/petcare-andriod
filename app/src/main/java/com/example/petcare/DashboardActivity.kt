@@ -54,6 +54,7 @@ class DashboardActivity : AppCompatActivity() {
     private var currentTab = MainTab.HOME
 
     private var homePage: HomePageController? = null
+    private lateinit var shakeDetector: ShakeDetector
     private var tasksPage: TasksPageController? = null
 
     private var expensesPage: ExpensesPageController? = null
@@ -77,6 +78,7 @@ class DashboardActivity : AppCompatActivity() {
         contentContainer = findViewById(R.id.tabContentContainer)
         hostFab = findViewById(R.id.fabAdd)
         tabPages[MainTab.HOME] = findViewById(R.id.dashboardScroll)
+        shakeDetector = ShakeDetector(this) { openTodaysChecklist() }
 
         updateStatusBarIcons()
 
@@ -99,7 +101,20 @@ class DashboardActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        shakeDetector.start()
         refreshCurrentTab()
+    }
+
+    override fun onPause() {
+        shakeDetector.stop()
+        super.onPause()
+    }
+
+    /** Shake gesture: jump straight to today's checklist for all pets. */
+    private fun openTodaysChecklist() {
+        window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+        android.widget.Toast.makeText(this, "Opening today's checklist", android.widget.Toast.LENGTH_SHORT).show()
+        startActivity(Intent(this, ChecklistActivity::class.java))
     }
 
     override fun onDestroy() {
@@ -318,6 +333,10 @@ class DashboardActivity : AppCompatActivity() {
 
         page.findViewById<View>(R.id.layoutPetHistory).setOnClickListener {
             startActivity(Intent(this, PetHistoryActivity::class.java))
+        }
+
+        page.findViewById<View>(R.id.layoutImportRecords).setOnClickListener {
+            startActivity(Intent(this, ImportRecordsActivity::class.java))
         }
 
         page.findViewById<View>(R.id.layoutPersonalInfo).setOnClickListener {

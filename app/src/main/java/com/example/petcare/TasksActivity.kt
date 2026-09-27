@@ -18,6 +18,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class TasksActivity : AppCompatActivity() {
     private lateinit var tasksPage: TasksPageController
+    private lateinit var shakeDetector: ShakeDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +32,7 @@ class TasksActivity : AppCompatActivity() {
             sessionManager = SessionManager(this)
         )
 
+        shakeDetector = ShakeDetector(this) { openTodaysChecklist() }
         updateStatusBarIcons()
         updateBottomNavigationUI()
 
@@ -49,7 +51,20 @@ class TasksActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        shakeDetector.start()
         tasksPage.refresh()
+    }
+
+    override fun onPause() {
+        shakeDetector.stop()
+        super.onPause()
+    }
+
+    /** Shake gesture: jump straight to today's checklist for all pets. */
+    private fun openTodaysChecklist() {
+        window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+        android.widget.Toast.makeText(this, "Opening today's checklist", android.widget.Toast.LENGTH_SHORT).show()
+        startActivity(Intent(this, ChecklistActivity::class.java))
     }
 
     private fun setupBottomNavigation() {

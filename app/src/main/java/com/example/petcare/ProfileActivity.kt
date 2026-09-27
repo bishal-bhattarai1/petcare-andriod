@@ -121,6 +121,10 @@ class ProfileActivity : AppCompatActivity() {
             startActivity(Intent(this, PetHistoryActivity::class.java))
         }
 
+        findViewById<View>(R.id.layoutImportRecords).setOnClickListener {
+            startActivity(Intent(this, ImportRecordsActivity::class.java))
+        }
+
         findViewById<View>(R.id.layoutPersonalInfo).setOnClickListener {
             startActivity(Intent(this, PersonalInfoActivity::class.java))
         }

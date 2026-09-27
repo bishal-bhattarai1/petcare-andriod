@@ -35,12 +35,24 @@ object InfoContent {
             "Completed routines are locked so your history stays accurate. You can still edit it before it's done, or delete it."
         ),
         Section(
+            "Which gestures can I use?",
+            "• Swipe right on a task: mark it done (once its time has come).\n• Swipe left on a task or expense: delete it (you'll be asked first).\n• Long-press a task: quick actions (edit, add to calendar, delete).\n• Shake your phone on any main tab: open today's checklist."
+        ),
+        Section(
+            "How do I save vet clinics, parks and other places?",
+            "Profile → Locations → +. Choose the type (vet clinic, grooming salon, dog park, pet store or animal shelter), then pin it on the map. When adding a task you can link it to a saved place."
+        ),
+        Section(
+            "Can I import appointments or vaccination schedules?",
+            "Yes. Profile → Import records, then choose a calendar file (.ics) from your vet's booking email, Google or Outlook, or a spreadsheet (.csv) with date, type and notes columns. You can also share an appointment message from SMS or email to PetCare."
+        ),
+        Section(
             "How do I track and download expenses?",
             "Open the Expenses tab and tap + to add one. Use the filters to choose a pet or time period, then tap the download icon to save a PDF report or CSV spreadsheet to Downloads/PetCare."
         ),
         Section(
             "How do reminders work?",
-            "Turn on notifications in Profile. For vaccinations, add a date on the pet's profile and keep the reminder switch on; you'll be notified at 9:00 AM that day."
+            "Turn on notifications in Profile. Routines with \"Remind me\" notify you at their time every day, week or month they're due. Vaccinations and upcoming vet visits or other health records notify you at 9:00 AM on the day. Reminders are restored automatically after your phone restarts."
         ),
         Section(
             "How do I delete a pet?",

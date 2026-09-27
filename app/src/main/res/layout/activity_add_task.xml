@@ -223,6 +223,20 @@
                         app:chipIconTint="@color/chip_selectable_text"
                         app:chipStrokeColor="@color/chip_selectable_stroke"
                         app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCleaning"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cleaning"
+                        android:textColor="@color/chip_selectable_text"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/chip_selectable_bg"
+                        app:chipIcon="@drawable/ic_status_check"
+                        app:chipIconTint="@color/chip_selectable_text"
+                        app:chipStrokeColor="@color/chip_selectable_stroke"
+                        app:chipStrokeWidth="1dp" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
@@ -249,7 +263,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="44dp"
                     android:checked="true"
-                    android:minWidth="120dp"
+                    android:minWidth="96dp"
                     android:text="Daily"
                     android:textAlignment="center"
                     android:textColor="@color/chip_selectable_text"
@@ -263,7 +277,7 @@
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="44dp"
-                    android:minWidth="120dp"
+                    android:minWidth="96dp"
                     android:text="Weekly"
                     android:textAlignment="center"
                     android:textColor="@color/chip_selectable_text"
@@ -271,7 +285,40 @@
                     app:chipBackgroundColor="@color/chip_selectable_bg"
                     app:chipStrokeColor="@color/chip_selectable_stroke"
                     app:chipStrokeWidth="1dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipMonthly"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:minWidth="96dp"
+                    android:text="Monthly"
+                    android:textAlignment="center"
+                    android:textColor="@color/chip_selectable_text"
+                    app:checkedIconVisible="false"
+                    app:chipBackgroundColor="@color/chip_selectable_bg"
+                    app:chipStrokeColor="@color/chip_selectable_stroke"
+                    app:chipStrokeWidth="1dp" />
             </com.google.android.material.chip.ChipGroup>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutMonthDay"
+                style="@style/Widget.PetCare.TextInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Day of the month (1–31)"
+                android:visibility="gone"
+                app:helperText="In shorter months, 29–31 falls on the last day">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputMonthDay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="2"
+                    android:textColor="@color/app_text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:id="@+id/layoutWeeklyDays"

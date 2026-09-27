@@ -365,7 +365,7 @@ class MainActivity : AppCompatActivity() {
     private fun signInWithGoogle() {
         val webClientId = getString(R.string.google_web_client_id)
         if (webClientId.isBlank()) {
-            showMessage("Google sign-in isn't configured yet: add google_web_client_id in strings.xml.")
+            showMessage("Google sign-in isn't configured yet: set GOOGLE_WEB_CLIENT_ID in local.properties.")
             return
         }
 
@@ -384,8 +384,14 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onError(e: GetCredentialException) {
+                    android.util.Log.w("PetCareGoogleSignIn", "Google sign-in failed: ${e.type}", e)
                     when (e) {
-                        is GetCredentialCancellationException -> Unit // user closed the account picker
+                        // Google also reports a rejected sign-in (wrong SHA-1/package, missing test user) as a
+                        // cancellation, so only stay silent when the user really closed the picker.
+                        is GetCredentialCancellationException ->
+                            if (!e.message.orEmpty().contains("cancelled by the user", ignoreCase = true)) {
+                                showMessage("Google sign-in failed: ${e.message ?: e.type}")
+                            }
                         is NoCredentialException -> showMessage("No Google account found on this device. Add one in Settings.")
                         else -> showMessage("Google sign-in failed: ${e.message ?: e.type}")
                     }
