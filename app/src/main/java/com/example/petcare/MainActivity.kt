@@ -1,5 +1,6 @@
 package com.example.petcare
 
+import com.example.petcare.data.AuthRepository
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +25,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.credentials.Credential
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialManagerCallback
 import androidx.credentials.CustomCredential
@@ -37,7 +42,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var auth: AuthRepository
     private lateinit var sessionManager: SessionManager
     private lateinit var welcomePanel: View
     private lateinit var loginPanel: View
@@ -58,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        database = AuthDatabaseHelper(this)
+        auth = AuthRepository(this)
         sessionManager = SessionManager(this)
 
         if (sessionManager.isLoggedIn()) {
@@ -187,15 +192,18 @@ class MainActivity : AppCompatActivity() {
                 textPasswordStrength.text = "Enter a password"
                 textPasswordStrength.setTextColor(ContextCompat.getColor(this, R.color.auth_text_grey))
             }
-            password.length < 6 -> {
+            // Below the minimum: can't be used at all.
+            password.length < PasswordHasher.MIN_PASSWORD_LENGTH -> {
                 segment1.setBackgroundResource(weak)
                 segment2.setBackgroundResource(inactive)
                 segment3.setBackgroundResource(inactive)
                 segment4.setBackgroundResource(inactive)
-                textPasswordStrength.text = "Weak password (at least 6 characters required)"
+                textPasswordStrength.text =
+                    "Weak password (at least ${PasswordHasher.MIN_PASSWORD_LENGTH} characters required)"
                 textPasswordStrength.setTextColor(ContextCompat.getColor(this, R.color.strength_weak))
             }
-            password.length in 6..7 -> {
+            // Long enough but simple: strong needs 3+ character types (a-z, A-Z, 0-9, symbols) or 12+ characters.
+            password.length < STRONG_PASSWORD_LENGTH && characterClassCount(password) < 3 -> {
                 segment1.setBackgroundResource(medium)
                 segment2.setBackgroundResource(medium)
                 segment3.setBackgroundResource(medium)
@@ -214,14 +222,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** How many of the four character types (lowercase, uppercase, digit, symbol) [password] uses. */
+    private fun characterClassCount(password: String): Int = listOf(
+        password.any { it.isLowerCase() },
+        password.any { it.isUpperCase() },
+        password.any { it.isDigit() },
+        password.any { !it.isLetterOrDigit() }
+    ).count { it }
+
     private fun login() {
         val email = textOf(R.id.loginEmailInput)
         val password = textOf(R.id.loginPasswordInput)
 
         when {
             email.isBlank() || password.isBlank() -> showMessage("Enter email and password.")
-            else -> {
-                val userName = database.getUserName(email, password)
+            else -> runWhileDisabled(R.id.loginButton) {
+                // PBKDF2 verification (and a possible legacy-hash upgrade) runs on the IO thread pool.
+                val userName = withContext(Dispatchers.IO) { auth.getUserName(email, password) }
                 if (userName != null) {
                     if (rememberMeCheck.isChecked) {
                         sessionManager.saveEmail(email)
@@ -251,8 +268,8 @@ class MainActivity : AppCompatActivity() {
             !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
                 showMessage("Enter a valid email address.")
             }
-            password.length < 6 -> {
-                showMessage("Password must be at least 6 characters.")
+            password.length < PasswordHasher.MIN_PASSWORD_LENGTH -> {
+                showMessage("Password must be at least ${PasswordHasher.MIN_PASSWORD_LENGTH} characters.")
             }
             password != confirmPassword -> {
                 showMessage("Passwords do not match.")
@@ -260,16 +277,44 @@ class MainActivity : AppCompatActivity() {
             !termsCheck.isChecked -> {
                 showMessage("Please accept the Terms of Service & Privacy Policy.")
             }
-            database.emailExists(email) -> {
-                showMessage("An account already exists for this email.")
+            else -> runWhileDisabled(R.id.signUpButton) {
+                // Database lookup + PBKDF2 hashing happen off the main thread.
+                val outcome = withContext(Dispatchers.IO) {
+                    when {
+                        auth.emailExists(email) -> SignUpOutcome.EMAIL_TAKEN
+                        auth.createUser(name, email, password) -> SignUpOutcome.CREATED
+                        else -> SignUpOutcome.FAILED
+                    }
+                }
+                when (outcome) {
+                    SignUpOutcome.EMAIL_TAKEN -> showMessage("An account already exists for this email.")
+                    SignUpOutcome.CREATED -> {
+                        showMessage("Account created. You can login now.")
+                        showLogin()
+                        findViewById<EditText>(R.id.loginEmailInput).setText(email)
+                        findViewById<EditText>(R.id.loginPasswordInput).requestFocus()
+                    }
+                    SignUpOutcome.FAILED -> showMessage("Could not create account.")
+                }
             }
-            database.createUser(name, email, password) -> {
-                showMessage("Account created. You can login now.")
-                showLogin()
-                findViewById<EditText>(R.id.loginEmailInput).setText(email)
-                findViewById<EditText>(R.id.loginPasswordInput).requestFocus()
+        }
+    }
+
+    private enum class SignUpOutcome { EMAIL_TAKEN, CREATED, FAILED }
+
+    /**
+     * Runs [block] in the activity's coroutine scope with [buttonId] disabled, so a double tap
+     * can't start two slow PBKDF2 operations. The button is re-enabled even if [block] fails.
+     */
+    private fun runWhileDisabled(buttonId: Int, block: suspend () -> Unit) {
+        val button = findViewById<View>(buttonId)
+        button.isEnabled = false
+        lifecycleScope.launch {
+            try {
+                block()
+            } finally {
+                button.isEnabled = true
             }
-            else -> showMessage("Could not create account.")
         }
     }
 
@@ -292,29 +337,35 @@ class MainActivity : AppCompatActivity() {
         }
 
     /** Biometrics only unlock the account that last signed in on this device with a password or Google. */
-    private fun biometricAccountEmail(): String? {
-        val sessionEmail = (sessionManager.getBiometricEmail() ?: sessionManager.getSavedEmail())
-            ?.takeIf { it.isNotBlank() && database.emailExists(it) }
-        if (sessionEmail != null) return sessionEmail
-
-        val inputEmail = textOf(R.id.loginEmailInput).takeIf { it.isNotBlank() && database.emailExists(it) }
-        if (inputEmail != null) return inputEmail
-
-        return null
+    private suspend fun biometricAccountEmail(): String? {
+        val candidates = listOfNotNull(
+            sessionManager.getBiometricEmail() ?: sessionManager.getSavedEmail(),
+            textOf(R.id.loginEmailInput)
+        ).filter { it.isNotBlank() }
+        // Account lookups hit the database, so they run on the IO dispatcher.
+        return withContext(Dispatchers.IO) { candidates.firstOrNull { auth.emailExists(it) } }
     }
 
     private fun updateBiometricCard() {
         val subtitle = findViewById<TextView>(R.id.biometricSubtitle) ?: return
-        subtitle.text = biometricAccountEmail()?.let { "Sign in as $it" }
-            ?: "Sign in or enter email to enable"
+        lifecycleScope.launch {
+            subtitle.text = biometricAccountEmail()?.let { "Sign in as $it" }
+                ?: "Sign in or enter email to enable"
+        }
     }
 
     private fun handleBiometricLogin() {
-        val targetEmail = biometricAccountEmail()
-        if (targetEmail == null) {
-            showMessage("Please enter your registered email address or sign in once with password to enable biometric login.")
-            return
+        lifecycleScope.launch {
+            val targetEmail = biometricAccountEmail()
+            if (targetEmail == null) {
+                showMessage("Please enter your registered email address or sign in once with password to enable biometric login.")
+            } else {
+                startBiometricLogin(targetEmail)
+            }
         }
+    }
+
+    private fun startBiometricLogin(targetEmail: String) {
 
         val biometricManager = BiometricManager.from(this)
         val authenticators = biometricAuthenticators()
@@ -334,12 +385,14 @@ class MainActivity : AppCompatActivity() {
         val biometricPrompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 super.onAuthenticationSucceeded(result)
-                val userName = database.getUserNameByEmail(targetEmail)
-                if (userName == null) {
-                    showMessage("Account not found. Please sign in with your password.")
-                    return
+                lifecycleScope.launch {
+                    val userName = withContext(Dispatchers.IO) { auth.getUserNameByEmail(targetEmail) }
+                    if (userName == null) {
+                        showMessage("Account not found. Please sign in with your password.")
+                    } else {
+                        completeSignIn(userName, targetEmail)
+                    }
                 }
-                completeSignIn(userName, targetEmail)
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -418,14 +471,19 @@ class MainActivity : AppCompatActivity() {
         val email = googleCredential.id
         val name = googleCredential.displayName?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
 
-        // Creates a local account on first use; an existing account with the same email is reused.
-        if (!database.createSocialUser(name, email)) {
-            showMessage("Could not create your PetCare account.")
-            return
+        lifecycleScope.launch {
+            // Creates a local account on first use; an existing account with the same email is reused.
+            // null = account could not be created.
+            val userName = withContext(Dispatchers.IO) {
+                if (auth.createSocialUser(name, email)) auth.getUserNameByEmail(email) ?: name else null
+            }
+            if (userName == null) {
+                showMessage("Could not create your PetCare account.")
+            } else {
+                showMessage("Signed in as $email")
+                completeSignIn(userName, email)
+            }
         }
-        val userName = database.getUserNameByEmail(email) ?: name
-        showMessage("Signed in as $email")
-        completeSignIn(userName, email)
     }
 
     private fun showWelcome() {
@@ -489,5 +547,10 @@ class MainActivity : AppCompatActivity() {
     private fun updateStatusBarIcons() {
         val isDarkMode = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isDarkMode
+    }
+
+    private companion object {
+        /** Length at which a password counts as strong regardless of character variety. */
+        const val STRONG_PASSWORD_LENGTH = 12
     }
 }

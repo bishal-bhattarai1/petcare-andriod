@@ -11,37 +11,33 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.petcare.ui.HomeData
+import com.example.petcare.ui.HomeViewModel
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** Drives the Home tab of [DashboardActivity]: greeting, today's progress, stats, up next, pets. */
 class HomePageController(
     private val activity: AppCompatActivity,
     private val page: View,
-    private val database: AuthDatabaseHelper,
+    private val viewModel: HomeViewModel,
     private val sessionManager: SessionManager,
     private val onOpenTasks: () -> Unit,
     private val onOpenExpenses: () -> Unit,
     private val onOpenProfile: () -> Unit
 ) {
-    /** Everything the page shows, loaded together off the main thread. */
-    private data class HomeData(
-        val pets: List<PetDashboardModel>,
-        val tasks: List<CareTask>,
-        val monthSpend: Double
-    )
-
     private data class Pending(val task: CareTask, val minutes: Int?)
 
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val petAdapter = PetAdapter(emptyList())
 
     private val greeting: TextView = page.findViewById(R.id.textGreetingLabel)
@@ -84,50 +80,32 @@ class HomePageController(
 
         buildQuickActions()
         page.findViewById<TextView>(R.id.textCareTip).text = tipOfTheDay()
-    }
 
-    /** Re-binds session-backed UI immediately and reloads database content in the background. */
-    fun refresh() {
-        bindHeader()
-        bindEmergencyContact()
-        notificationsButton.visibility = if (sessionManager.areNotificationsEnabled()) View.VISIBLE else View.GONE
-
-        if (executor.isShutdown) return
-        executor.execute {
-            val data = loadData()
-            activity.runOnUiThread {
-                if (!activity.isFinishing && !activity.isDestroyed) render(data)
+        // Render whenever the ViewModel publishes new data, but only while the screen is visible.
+        activity.lifecycleScope.launch {
+            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.data.collect { data -> if (data != null) render(data) }
             }
         }
     }
 
-    fun release() {
-        executor.shutdownNow()
+    /** Re-binds session-backed UI immediately and asks the ViewModel to reload database content. */
+    fun refresh() {
+        bindHeader()
+        bindEmergencyContact()
+        notificationsButton.visibility = if (sessionManager.areNotificationsEnabled()) View.VISIBLE else View.GONE
+        viewModel.refresh() // loads on a background thread; the collector in setup() renders the result
     }
-
-    // region Loading
-
-    private fun loadData(): HomeData {
-        val monthStart = Calendar.getInstance().apply {
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        }.time
-        val monthSpend = database.getExpenses()
-            .filter { parseExpenseDate(it.date)?.let { d -> !d.before(monthStart) } ?: false }
-            .sumOf { it.amount }
-        return HomeData(database.getAllPets(), database.getCareTasks().filter { TaskSchedule.isDueToday(it) }, monthSpend)
-    }
-
-    // endregion
 
     // region Rendering
 
     private fun render(data: HomeData) {
+        // Progress counts every routine (weekly ones included), matching the Care Tasks page.
         val total = data.tasks.size
         val done = data.tasks.count { it.isCompleted }
         val nowMinutes = Calendar.getInstance().let { it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE) }
         val pending = data.tasks
-            .filter { !it.isCompleted }
+            .filter { !it.isCompleted && TaskSchedule.isDueToday(it) }
             .map { Pending(it, careTimeMinutes(it.scheduledTime)) }
             .sortedBy { it.minutes ?: Int.MAX_VALUE }
         val overdue = pending.count { it.minutes != null && it.minutes < nowMinutes }
@@ -140,7 +118,8 @@ class HomePageController(
         todaySummary.text = when {
             data.pets.isEmpty() -> "Add a pet to start tracking care."
             total == 0 -> "Add a care routine to plan the day."
-            pending.isEmpty() -> "All routines complete. Great work!"
+            done == total -> "All routines complete. Great work!"
+            pending.isEmpty() -> "You're all caught up for today."
             else -> {
                 val next = pending.first()
                 val prefix = if (next.minutes != null && next.minutes < nowMinutes) "Overdue" else "Next"

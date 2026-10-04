@@ -1,5 +1,7 @@
 package com.example.petcare
 
+import androidx.activity.viewModels
+import com.example.petcare.ui.TasksViewModel
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -17,6 +19,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class TasksActivity : AppCompatActivity() {
+    /** Holds this screen's data across rotation; loads it off the main thread. */
+    private val viewModel: TasksViewModel by viewModels()
     private lateinit var tasksPage: TasksPageController
     private lateinit var shakeDetector: ShakeDetector
 
@@ -28,7 +32,7 @@ class TasksActivity : AppCompatActivity() {
         tasksPage = TasksPageController(
             activity = this,
             page = findViewById(R.id.main_tasks),
-            database = AuthDatabaseHelper(this),
+            viewModel = viewModel,
             sessionManager = SessionManager(this)
         )
 

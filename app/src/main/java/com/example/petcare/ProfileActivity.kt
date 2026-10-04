@@ -28,7 +28,6 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 
 class ProfileActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
-    private lateinit var database: AuthDatabaseHelper
 
     private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -46,7 +45,6 @@ class ProfileActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_profile)
         sessionManager = SessionManager(this)
-        database = AuthDatabaseHelper(this)
 
         updateStatusBarIcons()
         updateBottomNavigationUI()

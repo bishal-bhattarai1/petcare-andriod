@@ -1,5 +1,10 @@
 package com.example.petcare
 
+import androidx.lifecycle.lifecycleScope
+import com.example.petcare.data.PlaceRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Intent
 import android.location.Geocoder
 import android.os.Bundle
@@ -21,12 +26,11 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.Locale
-import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
 class LocationsActivity : AppCompatActivity() {
 
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var places: PlaceRepository
 
     private var selectedLat: Double = 0.0
     private var selectedLng: Double = 0.0
@@ -60,7 +64,7 @@ class LocationsActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_locations)
 
-        database = AuthDatabaseHelper(this)
+        places = PlaceRepository(this)
 
         updateStatusBarIcons()
 
@@ -121,8 +125,15 @@ class LocationsActivity : AppCompatActivity() {
             }
         }
 
+    /** Loads the user's saved places off the main thread, then shows them. */
     private fun loadLocations() {
-        val locations = database.getLocations()
+        lifecycleScope.launch {
+            showLocations(withContext(Dispatchers.IO) { places.getLocations() })
+        }
+    }
+
+    private fun showLocations(allLocations: List<PetLocation>) {
+        val locations = allLocations
             .filter { placeFilter == null || PlaceCategory.from(it.category) == placeFilter }
         val layout = findViewById<LinearLayout>(R.id.layoutLocationList)
         layout.removeAllViews()
@@ -248,9 +259,11 @@ class LocationsActivity : AppCompatActivity() {
             .setTitle("Delete Location")
             .setMessage("Are you sure you want to remove \"${loc.name}\"?")
             .setPositiveButton("Delete") { _, _ ->
-                if (database.deleteLocation(loc.id)) {
-                    Toast.makeText(this, "Location removed", Toast.LENGTH_SHORT).show()
-                    loadLocations()
+                lifecycleScope.launch {
+                    if (withContext(Dispatchers.IO) { places.deleteLocation(loc.id) }) {
+                        Toast.makeText(this@LocationsActivity, "Location removed", Toast.LENGTH_SHORT).show()
+                        loadLocations()
+                    }
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -346,9 +359,18 @@ class LocationsActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
-                val locationId = database.saveLocationAndGetId(name, addr, cat, selectedLat, selectedLng)
-                if (locationId != -1L) {
-                    Toast.makeText(this, "Location saved successfully!", Toast.LENGTH_SHORT).show()
+                // Capture the map pin BEFORE the form is reset below.
+                val pickedLat = selectedLat
+                val pickedLng = selectedLng
+                lifecycleScope.launch {
+                    val locationId = withContext(Dispatchers.IO) {
+                        places.saveLocationAndGetId(name, addr, cat, pickedLat, pickedLng)
+                    }
+                    if (locationId == -1L) {
+                        Toast.makeText(this@LocationsActivity, "Failed to save location", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                    Toast.makeText(this@LocationsActivity, "Location saved successfully!", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                     activeDialog = null
 
@@ -359,23 +381,20 @@ class LocationsActivity : AppCompatActivity() {
                     pendingAddress = ""
                     loadLocations()
 
-                    if (selectedLat == 0.0 && selectedLng == 0.0) {
-                        Executors.newSingleThreadExecutor().execute {
+                    // No pin was dropped on the map: look the address up to get coordinates.
+                    if (pickedLat == 0.0 && pickedLng == 0.0) {
+                        withContext(Dispatchers.IO) {
                             try {
-                                val geocoder = Geocoder(this, Locale.getDefault())
+                                val geocoder = Geocoder(this@LocationsActivity, Locale.getDefault())
                                 @Suppress("DEPRECATION")
                                 val addresses = geocoder.getFromLocationName(addr, 1)
                                 if (!addresses.isNullOrEmpty()) {
-                                    val lat = addresses[0].latitude
-                                    val lng = addresses[0].longitude
-                                    database.updateLocationCoordinates(locationId, lat, lng)
+                                    places.updateLocationCoordinates(locationId, addresses[0].latitude, addresses[0].longitude)
                                 }
                             } catch (_: Exception) {
                             }
                         }
                     }
-                } else {
-                    Toast.makeText(this, "Failed to save location", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel") { dialog, _ ->

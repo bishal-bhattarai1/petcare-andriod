@@ -1,5 +1,7 @@
 package com.example.petcare
 
+import com.example.petcare.data.HealthRepository
+import com.example.petcare.data.PetRepository
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -34,7 +36,8 @@ class ImportRecordsActivity : AppCompatActivity() {
 
     private data class Candidate(val record: ImportedRecord, val checkBox: MaterialCheckBox)
 
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
+    private lateinit var health: HealthRepository
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var parsed: List<ImportedRecord> = emptyList()
     private var candidates: List<Candidate> = emptyList()
@@ -48,7 +51,8 @@ class ImportRecordsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_import_records)
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
+        health = HealthRepository(this)
 
         val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -100,7 +104,7 @@ class ImportRecordsActivity : AppCompatActivity() {
             } catch (_: Exception) {
                 null
             }
-            Triple(name, text?.let { RecordImporter.parse(it) }, database.getPetOptions())
+            Triple(name, text?.let { RecordImporter.parse(it) }, pets.getPetOptions())
         }) { (name, result, pets) ->
             val fileLabel = findViewById<TextView>(R.id.textFileName)
             fileLabel.visibility = View.VISIBLE
@@ -180,7 +184,7 @@ class ImportRecordsActivity : AppCompatActivity() {
     /** Lists parsed records; ones the pet already has are shown but can't be imported twice. */
     private fun showRecords() {
         val petId = selectedPetId
-        runInBackground({ database.getHealthcareHistory(petId).map { key(it.type, it.date, it.notes) }.toSet() }) { existing ->
+        runInBackground({ health.getHealthcareHistory(petId).map { key(it.type, it.date, it.notes) }.toSet() }) { existing ->
             if (petId != selectedPetId) return@runInBackground
             val container = findViewById<LinearLayout>(R.id.layoutImportRows)
             container.removeAllViews()
@@ -239,8 +243,8 @@ class ImportRecordsActivity : AppCompatActivity() {
         findViewById<View>(R.id.buttonImport).isEnabled = false
         runInBackground({
             selected.count { record ->
-                val recordId = database.addHealthcareRecord(petId, record.type, record.date, record.notes)
-                if (recordId != -1L) HealthSchedule.onRecordAdded(this, database, petId, recordId, record.type, record.date)
+                val recordId = health.addHealthcareRecord(petId, record.type, record.date, record.notes)
+                if (recordId != -1L) HealthSchedule.onRecordAdded(this, petId, recordId, record.type, record.date)
                 recordId != -1L
             }
         }) { saved ->

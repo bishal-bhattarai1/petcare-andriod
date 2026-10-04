@@ -1,5 +1,7 @@
 package com.example.petcare
 
+import com.example.petcare.data.HealthRepository
+import com.example.petcare.data.TaskRepository
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
@@ -24,7 +26,8 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 class NotificationsActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var tasks: TaskRepository
+    private lateinit var health: HealthRepository
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private lateinit var todayLayout: LinearLayout
@@ -48,7 +51,8 @@ class NotificationsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_notifications)
-        database = AuthDatabaseHelper(this)
+        tasks = TaskRepository(this)
+        health = HealthRepository(this)
 
         todayLayout = findViewById(R.id.layoutTodayReminders)
         healthcareLayout = findViewById(R.id.layoutHealthcareRecords)
@@ -96,8 +100,8 @@ class NotificationsActivity : AppCompatActivity() {
     private fun loadReminders() {
         if (executor.isShutdown) return
         executor.execute {
-            val allTasks = database.getCareTasks().filter { TaskSchedule.isDueToday(it) }
-            val medicalHistory = database.getAllHealthcareHistory()
+            val allTasks = tasks.getCareTasks().filter { TaskSchedule.isDueToday(it) }
+            val medicalHistory = health.getAllHealthcareHistory()
             val reminders = buildReminders(allTasks)
             runOnUiThread {
                 if (!isFinishing && !isDestroyed) render(reminders, medicalHistory, allTasks)

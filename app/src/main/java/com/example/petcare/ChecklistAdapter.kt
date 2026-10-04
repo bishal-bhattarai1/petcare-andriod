@@ -25,7 +25,7 @@ import com.google.android.material.chip.ChipGroup
 /** Checklist rows for [ChecklistActivity]. Actions live in an overflow menu so rows never overflow. */
 class ChecklistAdapter(
     private val onToggleComplete: (CareTask, View) -> Unit,
-    private val onWeeklyDayToggled: (CareTask, String, Boolean) -> Unit,
+    private val onWeekDayTapped: (CareTask, String, View) -> Unit,
     private val onEdit: (CareTask) -> Unit,
     private val onDelete: (CareTask) -> Unit,
     private val onSyncCalendar: (CareTask) -> Unit
@@ -153,34 +153,60 @@ class ChecklistAdapter(
             }
         }
 
+        /**
+         * Read-only "this week" strip for weekly routines. Chips never toggle themselves: only
+         * today's chip completes the routine, so past days can't be backfilled all at once.
+         */
         private fun bindWeekly(task: CareTask) {
-            val days = task.weekDays.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            if (task.repeatType != "Weekly" || task.isCompleted || days.isEmpty()) {
+            val days = WEEK_ORDER.filter { day -> task.weekDays.split(",").any { it.trim() == day } }
+            if (!task.repeatType.equals("Weekly", ignoreCase = true) || days.isEmpty()) {
                 weeklySection.visibility = View.GONE
                 weeklyDays.removeAllViews()
                 return
             }
 
-            val completed = task.completedWeekDays.split(",").map { it.trim() }.toSet()
+            val statuses = days.associateWith { CompletionRules.weekDayStatus(it, task) }
+            val doneCount = statuses.values.count { it == CompletionRules.WeekDayStatus.DONE }
             weeklySection.visibility = View.VISIBLE
-            weeklyLabel.text = "This week · ${days.count { it in completed }} of ${days.size} days"
+            weeklyLabel.text = "This week · $doneCount of ${days.size} days done"
 
             weeklyDays.removeAllViews()
-            days.forEach { day ->
+            statuses.forEach { (day, status) ->
                 weeklyDays.addView(Chip(ctx).apply {
                     text = day
-                    isCheckable = true
-                    isChecked = day in completed
-                    isCheckedIconVisible = false
+                    isCheckable = false
                     chipMinHeight = 32 * density
                     ensureAccessibleTouchTarget((40 * density).toInt())
                     chipStrokeWidth = density
-                    setTextColor(ContextCompat.getColorStateList(ctx, R.color.chip_selectable_text))
-                    chipBackgroundColor = ContextCompat.getColorStateList(ctx, R.color.chip_selectable_bg)
-                    chipStrokeColor = ContextCompat.getColorStateList(ctx, R.color.chip_selectable_stroke)
-                    contentDescription = "${fullDayName(day)}, ${if (isChecked) "done" else "not done"}"
-                    setOnClickListener { onWeeklyDayToggled(task, day, isChecked) }
+                    styleWeekDay(this, status)
+                    contentDescription = "${fullDayName(day)}, ${status.name.lowercase()}"
+                    setOnClickListener { onWeekDayTapped(task, day, it) }
                 })
+            }
+        }
+
+        private fun styleWeekDay(chip: Chip, status: CompletionRules.WeekDayStatus) {
+            val (bg, stroke, fg) = when (status) {
+                CompletionRules.WeekDayStatus.DONE -> Triple(R.color.md_primary, R.color.md_primary, R.color.md_on_primary)
+                CompletionRules.WeekDayStatus.TODAY -> Triple(R.color.md_secondary_container, R.color.md_secondary, R.color.md_on_secondary_container)
+                CompletionRules.WeekDayStatus.MISSED -> Triple(R.color.md_error_container, R.color.md_error_container, R.color.md_on_error_container)
+                CompletionRules.WeekDayStatus.UPCOMING -> Triple(R.color.app_input_bg, R.color.app_divider, R.color.app_text_secondary)
+            }
+            chip.chipBackgroundColor = ContextCompat.getColorStateList(ctx, bg)
+            chip.chipStrokeColor = ContextCompat.getColorStateList(ctx, stroke)
+            chip.setTextColor(ContextCompat.getColor(ctx, fg))
+            chip.typeface = if (status == CompletionRules.WeekDayStatus.TODAY) fontBold else fontRegular
+            chip.alpha = if (status == CompletionRules.WeekDayStatus.UPCOMING) 0.6f else 1f
+            chip.isChipIconVisible = status == CompletionRules.WeekDayStatus.DONE
+            if (status == CompletionRules.WeekDayStatus.DONE) {
+                chip.setChipIconResource(R.drawable.ic_status_check)
+                chip.chipIconTint = ContextCompat.getColorStateList(ctx, R.color.md_on_primary)
+                chip.chipIconSize = 14 * density
+            }
+            chip.paintFlags = if (status == CompletionRules.WeekDayStatus.MISSED) {
+                chip.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            } else {
+                chip.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             }
         }
 
@@ -209,6 +235,8 @@ class ChecklistAdapter(
         private const val MENU_EDIT = 2
         private const val MENU_CALENDAR = 3
         private const val MENU_DELETE = 4
+
+        private val WEEK_ORDER = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
         private val DIFF = object : DiffUtil.ItemCallback<CareTask>() {
             override fun areItemsTheSame(oldItem: CareTask, newItem: CareTask) = oldItem.id == newItem.id

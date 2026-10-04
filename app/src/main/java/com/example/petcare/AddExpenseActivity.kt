@@ -1,5 +1,11 @@
 package com.example.petcare
 
+import androidx.lifecycle.lifecycleScope
+import com.example.petcare.data.ExpenseRepository
+import com.example.petcare.data.PetRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.View
@@ -21,7 +27,8 @@ import java.util.Calendar
 import java.util.Locale
 
 class AddExpenseActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var expenses: ExpenseRepository
+    private lateinit var pets: PetRepository
     private var selectedPet: PetOption? = null
     private var initialPetId: Long = -1L
 
@@ -29,7 +36,8 @@ class AddExpenseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_add_expense)
-        database = AuthDatabaseHelper(this)
+        expenses = ExpenseRepository(this)
+        pets = PetRepository(this)
         initialPetId = intent.getLongExtra(EXTRA_SELECTED_PET_ID, -1L)
 
         updateStatusBarIcons()
@@ -42,12 +50,15 @@ class AddExpenseActivity : AppCompatActivity() {
         findViewById<Toolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
 
         val saveButton = findViewById<Button>(R.id.buttonSaveExpense)
-        val petOptions = setupPetPicker()
         setupDatePicker()
-
-        if (petOptions.isEmpty()) {
-            saveButton.isEnabled = false
-            saveButton.alpha = 0.55f
+        // Load the pet list off the main thread, then fill the picker.
+        lifecycleScope.launch {
+            val petOptions = withContext(Dispatchers.IO) { pets.getPetOptions() }
+            setupPetPicker(petOptions)
+            if (petOptions.isEmpty()) {
+                saveButton.isEnabled = false
+                saveButton.alpha = 0.55f
+            }
         }
 
         saveButton.setOnClickListener {
@@ -74,25 +85,24 @@ class AddExpenseActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val saved = database.saveExpense(
-                petId = pet.id,
-                category = selectedChipText(findViewById(R.id.chipGroupExpenseCategory), "Food"),
-                description = description,
-                date = date,
-                amount = amount
-            )
-
-            if (saved) {
-                Toast.makeText(this, "Expense saved!", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Could not save expense", Toast.LENGTH_SHORT).show()
+            val category = selectedChipText(findViewById(R.id.chipGroupExpenseCategory), "Food")
+            saveButton.isEnabled = false // no double save while writing
+            lifecycleScope.launch {
+                val saved = withContext(Dispatchers.IO) {
+                    expenses.saveExpense(petId = pet.id, category = category, description = description, date = date, amount = amount)
+                }
+                if (saved) {
+                    Toast.makeText(this@AddExpenseActivity, "Expense saved!", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    saveButton.isEnabled = true
+                    Toast.makeText(this@AddExpenseActivity, "Could not save expense", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
-    private fun setupPetPicker(): List<PetOption> {
-        val pets = database.getPetOptions()
+    private fun setupPetPicker(pets: List<PetOption>): List<PetOption> {
         val input = findViewById<AutoCompleteTextView>(R.id.inputPetName)
 
         if (pets.isEmpty()) {

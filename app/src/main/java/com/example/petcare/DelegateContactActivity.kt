@@ -1,5 +1,12 @@
 package com.example.petcare
 
+import androidx.lifecycle.lifecycleScope
+import com.example.petcare.data.PetEntity
+import com.example.petcare.data.PetRepository
+import com.example.petcare.data.TaskRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -22,7 +29,13 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 
 class DelegateContactActivity : AppCompatActivity() {
 
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
+    private lateinit var tasks: TaskRepository
+
+    // The selected pet's routines and profile, loaded once in the background per pet selection,
+    // so the live message preview (rebuilt on every keystroke) never touches the database.
+    private var selectedPetTasks: List<CareTask> = emptyList()
+    private var selectedPetDetails: PetEntity? = null
     private lateinit var sessionManager: SessionManager
 
     private lateinit var textSelectedPetName: TextView
@@ -65,7 +78,8 @@ class DelegateContactActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_delegate_contact)
 
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
+        tasks = TaskRepository(this)
         sessionManager = SessionManager(this)
 
         updateStatusBarIcons()
@@ -106,12 +120,27 @@ class DelegateContactActivity : AppCompatActivity() {
     }
 
     private fun loadPets() {
-        petOptions = database.getPetOptions()
-        if (petOptions.isNotEmpty()) {
-            selectedPet = petOptions.first()
-            textSelectedPetName.text = selectedPet?.name
-        } else {
-            textSelectedPetName.text = "No pets available"
+        lifecycleScope.launch {
+            petOptions = withContext(Dispatchers.IO) { pets.getPetOptions() }
+            if (petOptions.isNotEmpty()) {
+                selectedPet = petOptions.first()
+                textSelectedPetName.text = selectedPet?.name
+                loadSelectedPetData()
+            } else {
+                textSelectedPetName.text = "No pets available"
+            }
+        }
+    }
+
+    /** Loads the selected pet's routines and profile off the main thread, then refreshes the preview. */
+    private fun loadSelectedPetData() {
+        val pet = selectedPet ?: return
+        lifecycleScope.launch {
+            val (petTasks, details) = withContext(Dispatchers.IO) { tasks.getCareTasks(pet.id) to pets.getPet(pet.id) }
+            if (selectedPet?.id != pet.id) return@launch // user picked another pet meanwhile
+            selectedPetTasks = petTasks
+            selectedPetDetails = details
+            updateMessagePreview()
         }
     }
 
@@ -130,7 +159,7 @@ class DelegateContactActivity : AppCompatActivity() {
                 .setSingleChoiceItems(petNames, checkedItem) { dialog, which ->
                     selectedPet = petOptions[which]
                     textSelectedPetName.text = selectedPet?.name
-                    updateMessagePreview()
+                    loadSelectedPetData()
                     dialog.dismiss()
                 }
                 .show()
@@ -191,7 +220,7 @@ class DelegateContactActivity : AppCompatActivity() {
         builder.append("Hi! Here are the care details for ${pet.name}:\n\n")
 
         val checkedChipId = chipGroupCategory.checkedChipId
-        val allTasks = database.getCareTasks(pet.id)
+        val allTasks = selectedPetTasks
 
         when (checkedChipId) {
             R.id.chipChecklist -> {
@@ -235,31 +264,13 @@ class DelegateContactActivity : AppCompatActivity() {
             }
             R.id.chipEmergencyHealth -> {
                 builder.append("🚨 Emergency & Health Summary:\n")
-                var species = ""
-                var breed = ""
-                var age = 0
-                var weight = 0.0
-                var vaccineDate = ""
-                var allergies = ""
-                try {
-                    val cursor = database.readableDatabase.query(
-                        "pets",
-                        arrayOf("species", "breed", "age", "weight", "vaccine_date", "allergies"),
-                        "id = ?",
-                        arrayOf(pet.id.toString()),
-                        null, null, null
-                    )
-                    cursor?.use {
-                        if (it.moveToFirst()) {
-                            species = it.getString(it.getColumnIndexOrThrow("species")).orEmpty()
-                            breed = it.getString(it.getColumnIndexOrThrow("breed")).orEmpty()
-                            age = it.getInt(it.getColumnIndexOrThrow("age"))
-                            weight = it.getDouble(it.getColumnIndexOrThrow("weight"))
-                            vaccineDate = it.getString(it.getColumnIndexOrThrow("vaccine_date")).orEmpty()
-                            allergies = it.getString(it.getColumnIndexOrThrow("allergies")).orEmpty()
-                        }
-                    }
-                } catch (_: Exception) {}
+                val details = selectedPetDetails
+                val species = details?.species.orEmpty()
+                val breed = details?.breed.orEmpty()
+                val age = details?.age ?: 0
+                val weight = details?.weight ?: 0.0
+                val vaccineDate = details?.vaccineDate.orEmpty()
+                val allergies = details?.allergies.orEmpty()
 
                 builder.append("- Type: $species\n")
                 if (breed.isNotBlank()) builder.append("- Breed: $breed\n")
@@ -272,23 +283,8 @@ class DelegateContactActivity : AppCompatActivity() {
 
         if (switchCareNotes.isChecked) {
             builder.append("\n📝 Additional Care Notes:\n")
-            var diet = ""
-            var notes = ""
-            try {
-                val cursor = database.readableDatabase.query(
-                    "pets",
-                    arrayOf("diet", "notes"),
-                    "id = ?",
-                    arrayOf(pet.id.toString()),
-                    null, null, null
-                )
-                cursor?.use {
-                    if (it.moveToFirst()) {
-                        diet = it.getString(it.getColumnIndexOrThrow("diet")).orEmpty()
-                        notes = it.getString(it.getColumnIndexOrThrow("notes")).orEmpty()
-                    }
-                }
-            } catch (_: Exception) {}
+            val diet = selectedPetDetails?.diet.orEmpty()
+            val notes = selectedPetDetails?.notes.orEmpty()
 
             if (diet.isNotBlank()) builder.append("Diet: $diet\n")
             if (notes.isNotBlank()) builder.append("Notes: $notes\n")

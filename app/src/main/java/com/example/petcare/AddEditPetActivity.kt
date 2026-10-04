@@ -1,5 +1,11 @@
 package com.example.petcare
 
+import androidx.lifecycle.lifecycleScope
+import com.example.petcare.data.PetEntity
+import com.example.petcare.data.PetRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -37,7 +43,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 class AddEditPetActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
 
     private lateinit var inputPetName: EditText
     private lateinit var inputBreed: EditText
@@ -88,7 +94,7 @@ class AddEditPetActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_add_edit_pet)
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
 
         updateStatusBarIcons()
 
@@ -112,21 +118,32 @@ class AddEditPetActivity : AppCompatActivity() {
         updateProgress()
     }
 
+    /** Loads the pet and its photos in the background, then fills the form. */
     private fun loadExistingPet(id: Long) {
-        val data = database.getPetById(id) ?: return
+        lifecycleScope.launch {
+            val loaded = withContext(Dispatchers.IO) { pets.getPet(id)?.let { it to pets.getPetPhotos(id) } }
+            if (loaded != null) {
+                bindPet(loaded.first, loaded.second)
+                renderPhotos()
+                updateProgress()
+            }
+        }
+    }
+
+    private fun bindPet(data: PetEntity, photos: List<String>) {
         isLoading = true
 
-        inputPetName.setText(data.getAsString("name"))
-        inputBreed.setText(data.getAsString("breed"))
-        inputAge.setText(data.getAsInteger("age")?.takeIf { it > 0 }?.toString().orEmpty())
-        inputWeight.setText(data.getAsDouble("weight")?.takeIf { it > 0 }?.let { formatNumber(it) }.orEmpty())
-        inputDiet.setText(data.getAsString("diet"))
-        inputVaccineDate.setText(data.getAsString("vaccine_date"))
-        setAllergies(data.getAsString("allergies").orEmpty())
-        inputToys.setText(data.getAsString("toys"))
-        inputNotes.setText(data.getAsString("notes"))
+        inputPetName.setText(data.name)
+        inputBreed.setText(data.breed)
+        inputAge.setText(data.age?.takeIf { it > 0 }?.toString().orEmpty())
+        inputWeight.setText(data.weight?.takeIf { it > 0 }?.let { formatNumber(it) }.orEmpty())
+        inputDiet.setText(data.diet)
+        inputVaccineDate.setText(data.vaccineDate)
+        setAllergies(data.allergies.orEmpty())
+        inputToys.setText(data.toys)
+        inputNotes.setText(data.notes)
 
-        when (val species = data.getAsString("species")) {
+        when (val species = data.species) {
             "Dog" -> chipGroupSpecies.check(R.id.chipDog)
             "Cat" -> chipGroupSpecies.check(R.id.chipCat)
             "Bird" -> chipGroupSpecies.check(R.id.chipBird)
@@ -139,10 +156,10 @@ class AddEditPetActivity : AppCompatActivity() {
             }
         }
 
-        switchReminder.isChecked = data.getAsInteger("reminder_enabled") == 1
+        switchReminder.isChecked = data.reminderEnabled == 1
 
         selectedPhotos.clear()
-        selectedPhotos.addAll(database.getPetPhotos(id))
+        selectedPhotos.addAll(photos)
 
         findViewById<TextView>(R.id.textPetFormTitle).text = "Edit pet"
         findViewById<Button>(R.id.buttonSavePet).text = "Save changes"
@@ -345,30 +362,41 @@ class AddEditPetActivity : AppCompatActivity() {
         val saveButton = findViewById<Button>(R.id.buttonSavePet)
         saveButton.isEnabled = false // Prevents a double tap from creating two pets.
 
+        // Read all form values on the main thread, then save on a background thread.
         val species = getSelectedSpecies()
         val vaccineDate = inputVaccineDate.text.toString().trim()
-        val petId = if (editingPetId != -1L) {
-            val success = database.updatePet(
-                editingPetId, name, species, inputBreed.text.toString().trim(), age ?: 0, weight ?: 0.0,
-                inputDiet.text.toString().trim(), vaccineDate, switchReminder.isChecked,
-                allergiesValue(), inputToys.text.toString().trim(), inputNotes.text.toString().trim()
-            )
-            if (success) editingPetId else -1L
-        } else {
-            database.savePet(
-                name, species, inputBreed.text.toString().trim(), age ?: 0, weight ?: 0.0,
-                inputDiet.text.toString().trim(), vaccineDate, switchReminder.isChecked,
-                allergiesValue(), inputToys.text.toString().trim(), inputNotes.text.toString().trim()
-            )
+        val breed = inputBreed.text.toString().trim()
+        val diet = inputDiet.text.toString().trim()
+        val reminder = switchReminder.isChecked
+        val allergies = allergiesValue()
+        val toys = inputToys.text.toString().trim()
+        val notes = inputNotes.text.toString().trim()
+        val photos = selectedPhotos.toList()
+        lifecycleScope.launch {
+            val petId = withContext(Dispatchers.IO) {
+                val id = if (editingPetId != -1L) {
+                    val success = pets.updatePet(
+                        editingPetId, name, species, breed, age ?: 0, weight ?: 0.0,
+                        diet, vaccineDate, reminder, allergies, toys, notes
+                    )
+                    if (success) editingPetId else -1L
+                } else {
+                    pets.savePet(name, species, breed, age ?: 0, weight ?: 0.0, diet, vaccineDate, reminder, allergies, toys, notes)
+                }
+                if (id != -1L) pets.savePetPhotos(id, photos)
+                id
+            }
+            onPetSaved(petId, name, vaccineDate, saveButton)
         }
+    }
 
+    private fun onPetSaved(petId: Long, name: String, vaccineDate: String, saveButton: Button) {
         if (petId == -1L) {
             saveButton.isEnabled = true
             Toast.makeText(this, "Couldn't save the pet. Please try again.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        database.savePetPhotos(petId, selectedPhotos)
         if (switchReminder.isChecked && vaccineDate.isNotBlank()) {
             VaccineReminder.schedule(this, petId, name, vaccineDate)
         } else {
@@ -462,8 +490,13 @@ class AddEditPetActivity : AppCompatActivity() {
         if (selectedPhotos.isNotEmpty()) count++
 
         val percent = (count * 100) / 11
-        progressCompletion.setProgress(percent, true)
-        textCompletion.text = getString(R.string.add_pet_completion_text, percent)
+        if (progressCompletion.progress != percent) {
+            progressCompletion.setProgress(percent, false)
+        }
+        val completionMsg = getString(R.string.add_pet_completion_text, percent)
+        if (textCompletion.text != completionMsg) {
+            textCompletion.text = completionMsg
+        }
     }
 
     private fun updateStatusBarIcons() {

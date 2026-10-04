@@ -59,12 +59,11 @@ class TaskAdapter(
             } else {
                 append("Anytime")
             }
+            append(" • ").append(TaskSchedule.label(task))
             if (task.requiredSupplies.isNotBlank()) {
                 append(" • ").append(task.requiredSupplies)
             } else if (task.taskNotes.isNotBlank()) {
                 append(" • ").append(task.taskNotes)
-            } else if (task.repeatType.isNotBlank()) {
-                append(" • ").append(TaskSchedule.label(task))
             }
         }
         holder.schedule.text = scheduleText

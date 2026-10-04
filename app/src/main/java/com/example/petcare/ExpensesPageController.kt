@@ -16,9 +16,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.petcare.ui.ExpensesState
+import com.example.petcare.ui.ExpensesViewModel
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -31,6 +36,7 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /**
  * Drives the Spending page (layout `activity_expenses`). Shared by [ExpensesActivity] and the
@@ -39,7 +45,7 @@ import kotlin.math.roundToInt
 class ExpensesPageController(
     private val activity: AppCompatActivity,
     private val page: View,
-    private val database: AuthDatabaseHelper,
+    private val viewModel: ExpensesViewModel,
     /** View that snackbars should sit above (the FAB), if any. */
     private val snackbarAnchor: () -> View? = { null }
 ) {
@@ -61,6 +67,7 @@ class ExpensesPageController(
     private var parsedDates: Map<Long, Date?> = emptyMap()
     private var visibleExpenses: List<ExpenseTransaction> = emptyList()
 
+    /** Only used for writing export files; database work goes through [viewModel]. */
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val searchRunnable = Runnable { applyFilters() }
@@ -112,24 +119,29 @@ class ExpensesPageController(
             selectedPetId = chip.tag as? Long
             applyFilters()
         }
+
+        // Show each load the ViewModel publishes, only while the screen is visible.
+        activity.lifecycleScope.launch {
+            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { state -> if (state != null) show(state) }
+            }
+        }
     }
 
     /** Reloads pets and expenses in the background (e.g. after returning from Add Expense). */
     fun refresh() {
-        runInBackground({
-            val loadedPets = database.getPetOptions()
-            val loadedExpenses = database.getExpenses()
-            Triple(loadedPets, loadedExpenses, loadedExpenses.associate { it.id to parseExpenseDate(it.date) })
-        }) { (loadedPets, loadedExpenses, dates) ->
-            if (loadedPets != pets) {
-                pets = loadedPets
-                if (selectedPetId != null && pets.none { it.id == selectedPetId }) selectedPetId = null
-                rebuildPetChips()
-            }
-            allExpenses = loadedExpenses
-            parsedDates = dates
-            applyFilters()
+        viewModel.refresh()
+    }
+
+    private fun show(state: ExpensesState) {
+        if (state.pets != pets) {
+            pets = state.pets
+            if (selectedPetId != null && pets.none { it.id == selectedPetId }) selectedPetId = null
+            rebuildPetChips()
         }
+        allExpenses = state.expenses
+        parsedDates = state.parsedDates
+        applyFilters()
     }
 
     fun release() {
@@ -365,8 +377,8 @@ class ExpensesPageController(
         allExpenses = allExpenses.filterNot { it.id == expense.id }
         applyFilters()
 
-        runInBackground({ database.deleteExpense(expense.id) }) { deleted ->
-            if (deleted) {
+        activity.lifecycleScope.launch {
+            if (viewModel.deleteExpense(expense.id)) {
                 showMessage("Expense deleted")
             } else {
                 showMessage("Couldn't delete expense. Please try again.")

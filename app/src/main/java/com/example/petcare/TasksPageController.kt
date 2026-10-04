@@ -14,9 +14,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.petcare.ui.TasksState
+import com.example.petcare.ui.TasksViewModel
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -25,6 +30,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /**
  * Drives the Care Tasks page (layout `activity_tasks`). Shared by [TasksActivity] and the
@@ -33,7 +39,7 @@ import java.util.Locale
 class TasksPageController(
     private val activity: AppCompatActivity,
     private val page: View,
-    private val database: AuthDatabaseHelper,
+    private val viewModel: TasksViewModel,
     private val sessionManager: SessionManager
 ) {
     private var taskAdapter: TaskAdapter? = null
@@ -56,14 +62,31 @@ class TasksPageController(
         page.findViewById<View>(R.id.buttonAddRoutineTask).setOnClickListener {
             activity.startActivity(Intent(activity, AddTaskActivity::class.java))
         }
+
+        // Re-draw chips and list whenever the ViewModel publishes a new load (only while visible).
+        activity.lifecycleScope.launch {
+            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { state -> if (state != null) show(state) }
+            }
+        }
     }
 
     /** Reloads everything that may have changed while the page was hidden. */
     fun refresh() {
         updateDateText()
         updateHeaderAvatar()
-        setupPetFilterChips()
         render()
+    }
+
+    /** Applies a finished load: the pet chips first, then the routine list. */
+    private fun show(state: TasksState) {
+        // Ignore a result for a filter/day the user has already moved away from.
+        if (state.dateKey != selectedDateKey()) return
+        if (state.petId != selectedPetId) {
+            if (selectedPetId != null && state.pets.none { it.id == selectedPetId }) selectedPetId = null else return
+        }
+        setupPetFilterChips(state.pets)
+        renderTasks(state.tasks)
     }
 
     private fun setupHeaderAndDate() {
@@ -84,11 +107,11 @@ class TasksPageController(
         updateDateText()
     }
 
-    private fun selectedDateKey(): String = AuthDatabaseHelper.dateKey(selectedCalendar)
+    private fun selectedDateKey(): String = DateKeys.dateKey(selectedCalendar)
 
-    private fun isSelectedToday(): Boolean = selectedDateKey() == AuthDatabaseHelper.todayKey()
+    private fun isSelectedToday(): Boolean = selectedDateKey() == DateKeys.todayKey()
 
-    private fun isSelectedInFuture(): Boolean = selectedDateKey() > AuthDatabaseHelper.todayKey()
+    private fun isSelectedInFuture(): Boolean = selectedDateKey() > DateKeys.todayKey()
 
     private fun updateDateText() {
         val formattedDate = SimpleDateFormat("MMM d", Locale.getDefault()).format(selectedCalendar.time)
@@ -116,12 +139,9 @@ class TasksPageController(
         avatar.visibility = if (avatar.drawable != null) View.VISIBLE else View.GONE
     }
 
-    private fun setupPetFilterChips() {
+    private fun setupPetFilterChips(pets: List<PetOption>) {
         val chipGroupPets = page.findViewById<ChipGroup>(R.id.chipGroupPets)
         chipGroupPets.removeAllViews()
-
-        val pets = database.getPetOptions()
-        if (pets.none { it.id == selectedPetId }) selectedPetId = null
 
         addPetChip(chipGroupPets, "All pets", null, selectedPetId == null)
         pets.forEach { pet ->
@@ -144,8 +164,7 @@ class TasksPageController(
             isCheckedIconVisible = false
             setOnClickListener {
                 selectedPetId = petId
-                setupPetFilterChips()
-                render()
+                render() // reload; chips are rebuilt from the result
             }
         }
         chipGroup.addView(chip)
@@ -177,20 +196,24 @@ class TasksPageController(
                 styleChip(chip, isChecked)
                 if (isChecked) selectedCategory = category
             }
-            render()
+            renderTasks(viewModel.state.value?.tasks.orEmpty()) // category filter is applied in memory
         }
     }
 
     private fun matchesCategory(task: CareTask, keywords: List<String>): Boolean =
         keywords.isEmpty() || keywords.any { task.category.contains(it, ignoreCase = true) }
 
+    /** Reloads the selected pet's routines for the selected day (off the main thread, via the ViewModel). */
     fun render() {
-        val petTasks = database.getCareTasks(selectedPetId, selectedDateKey())
-            .filter { TaskSchedule.isDueOn(it, selectedCalendar) }
+        viewModel.load(selectedPetId, selectedDateKey())
+    }
 
-        // Progress for the selected day across all categories
-        val totalCount = petTasks.size
-        val completedCount = petTasks.count { it.isCompleted }
+    private fun renderTasks(allPetTasks: List<CareTask>) {
+        val dueTodayTasks = allPetTasks.filter { TaskSchedule.isDueOn(it, selectedCalendar) }
+
+        // Progress counts every listed routine (weekly ones included) so it matches the list below
+        val totalCount = allPetTasks.size
+        val completedCount = allPetTasks.count { it.isCompleted }
         val remainingCount = totalCount - completedCount
         val percentage = if (totalCount > 0) (completedCount * 100) / totalCount else 0
 
@@ -204,41 +227,47 @@ class TasksPageController(
             remainingCount == 0 -> "All done for the day. Great job!"
             else -> {
                 val left = if (remainingCount == 1) "1 task left" else "$remainingCount tasks left"
-                val next = petTasks.firstOrNull { !it.isCompleted }?.description?.takeIf { it.isNotBlank() }
+                val next = (dueTodayTasks.firstOrNull { !it.isCompleted } ?: allPetTasks.firstOrNull { !it.isCompleted })
+                    ?.description?.takeIf { it.isNotBlank() }
                 if (next != null) "$left · Next: $next" else left
             }
         }
 
         // Red dot on the bell while today's routines are still pending
         page.findViewById<View>(R.id.viewNotificationBadge).visibility =
-            if (isSelectedToday() && remainingCount > 0) View.VISIBLE else View.GONE
+            if (isSelectedToday() && dueTodayTasks.any { !it.isCompleted }) View.VISIBLE else View.GONE
 
-        // Category chips show how many tasks each one holds for the day
+        // Category chips show how many tasks each one holds
         categoryChips.forEach { (chipId, label, keywords) ->
-            val count = petTasks.count { matchesCategory(it, keywords) }
+            val count = allPetTasks.count { matchesCategory(it, keywords) }
             page.findViewById<Chip>(chipId)?.text = if (count > 0) "$label · $count" else label
         }
 
         val keywords = categoryChips.firstOrNull { it.second == selectedCategory }?.third.orEmpty()
-        val displayedTasks = petTasks.filter { matchesCategory(it, keywords) }
+        val displayedTasks = allPetTasks.filter { matchesCategory(it, keywords) }
         taskAdapter?.updateTasks(displayedTasks)
 
         page.findViewById<TextView>(R.id.textEmptyTasks).apply {
-            text = if (totalCount == 0) "No tasks for this day." else "No $selectedCategory tasks for this day."
+            text = if (allPetTasks.isEmpty()) "No routines set up yet." else "No $selectedCategory routines found."
             visibility = if (displayedTasks.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
     /** Marks a routine done for the selected day. Done is final and time-gated ([CompletionRules]). */
     private fun completeTask(task: CareTask) {
-        val reason = CompletionRules.blockReason(task, selectedDateKey())
-        val message = when {
-            reason != null -> reason
-            database.updateTaskCompletion(task.id, true, selectedDateKey()) -> "${task.description.ifBlank { "Routine" }} completed"
-            else -> "Could not update task"
+        val dateKey = selectedDateKey()
+        val reason = CompletionRules.blockReason(task, dateKey)
+        if (reason != null) {
+            Toast.makeText(activity, reason, Toast.LENGTH_SHORT).show()
+            render()
+            return
         }
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
-        render()
+        activity.lifecycleScope.launch {
+            val saved = viewModel.completeTask(task.id, dateKey)
+            val message = if (saved) "${task.description.ifBlank { "Routine" }} completed" else "Could not update task"
+            Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+            render()
+        }
     }
 
     private fun confirmDelete(task: CareTask) {
@@ -246,8 +275,10 @@ class TasksPageController(
             .setTitle("Delete Routine?")
             .setMessage("Remove \"${task.description}\" permanently?")
             .setPositiveButton("Delete") { _, _ ->
-                if (database.deleteTask(task.id)) TaskReminder.cancel(activity, task.id)
-                render()
+                activity.lifecycleScope.launch {
+                    if (viewModel.deleteTask(task.id)) TaskReminder.cancel(activity, task.id)
+                    render()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -366,17 +397,15 @@ class TasksPageController(
                     return@setPositiveButton
                 }
                 val newTime = timeInput.text.toString().trim()
-                val saved = database.updateTaskDetails(
-                    task.id,
-                    description,
-                    newTime,
-                    suppliesInput.text.toString().trim(),
-                    notesInput.text.toString().trim()
-                )
-                // Move the reminder to the new time.
-                if (saved) TaskReminder.schedule(activity, task.copy(description = description, scheduledTime = newTime))
-                Toast.makeText(activity, if (saved) "Changes saved" else "Could not save task", Toast.LENGTH_SHORT).show()
-                render()
+                val supplies = suppliesInput.text.toString().trim()
+                val notes = notesInput.text.toString().trim()
+                activity.lifecycleScope.launch {
+                    val saved = viewModel.updateTaskDetails(task.id, description, newTime, supplies, notes)
+                    // Move the reminder to the new time.
+                    if (saved) TaskReminder.schedule(activity, task.copy(description = description, scheduledTime = newTime))
+                    Toast.makeText(activity, if (saved) "Changes saved" else "Could not save task", Toast.LENGTH_SHORT).show()
+                    render()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()

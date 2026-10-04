@@ -17,10 +17,10 @@ object CompletionRules {
     /** Why [task] can't be completed on [dateKey] right now, or null if it can. */
     fun blockReason(
         task: CareTask,
-        dateKey: String = AuthDatabaseHelper.todayKey(),
+        dateKey: String = DateKeys.todayKey(),
         now: Calendar = Calendar.getInstance()
     ): String? {
-        val today = AuthDatabaseHelper.dateKey(now)
+        val today = DateKeys.dateKey(now)
         return when {
             task.isCompleted -> "Already done. Completed routines can't be undone."
             dateKey > today -> "You can't complete routines for a future day."
@@ -30,7 +30,7 @@ object CompletionRules {
         }
     }
 
-    fun canComplete(task: CareTask, dateKey: String = AuthDatabaseHelper.todayKey()): Boolean =
+    fun canComplete(task: CareTask, dateKey: String = DateKeys.todayKey()): Boolean =
         blockReason(task, dateKey) == null
 
     /** True when [time] ("hh:mm a") is now or earlier today, or when no time is set. */
@@ -39,15 +39,21 @@ object CompletionRules {
         return now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE) >= scheduled
     }
 
-    /** Weekly routines: a day can be ticked once it has arrived this week (Mon–Sun), never unticked. */
-    fun weekDayBlockReason(day: String, task: CareTask, now: Calendar = Calendar.getInstance()): String? {
+    enum class WeekDayStatus { DONE, TODAY, MISSED, UPCOMING }
+
+    /**
+     * Where one of a weekly routine's days stands this week (Mon–Sun). Only today can be
+     * ticked, through the normal completion rules; earlier days can't be filled in afterwards.
+     */
+    fun weekDayStatus(day: String, task: CareTask, now: Calendar = Calendar.getInstance()): WeekDayStatus {
+        val completed = task.completedWeekDays.split(",").map { it.trim() }
         val dayIndex = WEEK_DAYS.indexOf(day)
         val todayIndex = (now.get(Calendar.DAY_OF_WEEK) + 5) % 7 // Monday = 0 … Sunday = 6
         return when {
-            dayIndex > todayIndex -> "You can't tick ${ChecklistAdapter.fullDayName(day)} before it arrives."
-            dayIndex == todayIndex && !isTimeReached(task.scheduledTime, now) ->
-                "Available from ${task.scheduledTime.trim()} today."
-            else -> null
+            day in completed -> WeekDayStatus.DONE
+            dayIndex == todayIndex -> WeekDayStatus.TODAY
+            dayIndex < todayIndex -> WeekDayStatus.MISSED
+            else -> WeekDayStatus.UPCOMING
         }
     }
 

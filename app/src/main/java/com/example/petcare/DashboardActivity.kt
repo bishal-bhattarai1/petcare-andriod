@@ -1,5 +1,9 @@
 package com.example.petcare
 
+import androidx.activity.viewModels
+import com.example.petcare.ui.ExpensesViewModel
+import com.example.petcare.ui.HomeViewModel
+import com.example.petcare.ui.TasksViewModel
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -45,7 +49,10 @@ class DashboardActivity : AppCompatActivity() {
         PROFILE
     }
 
-    private lateinit var database: AuthDatabaseHelper
+    // Screen state lives in ViewModels so it survives rotation; they load data off the main thread.
+    private val homeViewModel: HomeViewModel by viewModels()
+    private val tasksViewModel: TasksViewModel by viewModels()
+    private val expensesViewModel: ExpensesViewModel by viewModels()
     private lateinit var sessionManager: SessionManager
     private lateinit var contentContainer: FrameLayout
     private lateinit var hostFab: FloatingActionButton
@@ -73,7 +80,6 @@ class DashboardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_dashboard)
-        database = AuthDatabaseHelper(this)
         sessionManager = SessionManager(this)
         contentContainer = findViewById(R.id.tabContentContainer)
         hostFab = findViewById(R.id.fabAdd)
@@ -118,7 +124,6 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        homePage?.release()
         expensesPage?.release()
         super.onDestroy()
     }
@@ -127,7 +132,7 @@ class DashboardActivity : AppCompatActivity() {
         homePage = HomePageController(
             activity = this,
             page = findViewById(R.id.dashboardScroll),
-            database = database,
+            viewModel = homeViewModel,
             sessionManager = sessionManager,
             onOpenTasks = { showTab(MainTab.TASKS) },
             onOpenExpenses = { showTab(MainTab.EXPENSES) },
@@ -254,7 +259,7 @@ class DashboardActivity : AppCompatActivity() {
         tasksPage = TasksPageController(
             activity = this,
             page = page,
-            database = database,
+            viewModel = tasksViewModel,
             sessionManager = sessionManager
         ).also { it.setup() }
     }
@@ -263,7 +268,7 @@ class DashboardActivity : AppCompatActivity() {
         expensesPage = ExpensesPageController(
             activity = this,
             page = page,
-            database = database,
+            viewModel = expensesViewModel,
             snackbarAnchor = { hostFab }
         ).also { it.setup() }
     }

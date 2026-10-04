@@ -1,5 +1,11 @@
 package com.example.petcare
 
+import androidx.lifecycle.lifecycleScope
+import com.example.petcare.data.HealthRepository
+import com.example.petcare.data.PetRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
@@ -30,11 +36,13 @@ import kotlin.math.roundToInt
  */
 class ShareReceiverActivity : AppCompatActivity() {
 
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
+    private lateinit var health: HealthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
+        health = HealthRepository(this)
 
         when {
             intent.action == Intent.ACTION_SEND && intent.type == "text/plain" ->
@@ -75,8 +83,15 @@ class ShareReceiverActivity : AppCompatActivity() {
         return null
     }
 
+    /** Loads the user's pets in the background, then asks which pet the shared text belongs to. */
     private fun showImportDialog(description: String, detectedTime: String, detectedDate: Calendar?) {
-        val pets = database.getPetOptions()
+        lifecycleScope.launch {
+            val petOptions = withContext(Dispatchers.IO) { pets.getPetOptions() }
+            showImportDialog(description, detectedTime, detectedDate, petOptions)
+        }
+    }
+
+    private fun showImportDialog(description: String, detectedTime: String, detectedDate: Calendar?, pets: List<PetOption>) {
         if (pets.isEmpty()) {
             Toast.makeText(this, "Add a pet in PetCare first to save this", Toast.LENGTH_LONG).show()
             finish()
@@ -140,16 +155,19 @@ class ShareReceiverActivity : AppCompatActivity() {
             val date = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(picked.time)
             val notes = notesInput.text?.toString()?.trim().orEmpty()
 
-            val recordId = database.addHealthcareRecord(petId, type, date, notes)
-            if (recordId != -1L) {
-                // Updates the pet's schedule: next vaccination date and/or a reminder on the day.
-                HealthSchedule.onRecordAdded(this, database, petId, recordId, type, date)
-                Toast.makeText(this, "$type saved to $petName's health records", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Couldn't save. Please try again.", Toast.LENGTH_SHORT).show()
+            it.isEnabled = false
+            lifecycleScope.launch {
+                val saved = withContext(Dispatchers.IO) {
+                    val recordId = health.addHealthcareRecord(petId, type, date, notes)
+                    // Updates the pet's schedule: next vaccination date and/or a reminder on the day.
+                    if (recordId != -1L) HealthSchedule.onRecordAdded(this@ShareReceiverActivity, petId, recordId, type, date)
+                    recordId != -1L
+                }
+                val message = if (saved) "$type saved to $petName's health records" else "Couldn't save. Please try again."
+                Toast.makeText(this@ShareReceiverActivity, message, Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+                finish()
             }
-            dialog.dismiss()
-            finish()
         }
     }
 

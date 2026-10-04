@@ -3,22 +3,45 @@ package com.example.petcare
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.WorkerThread
+import com.example.petcare.data.TaskRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Shows reminder notifications:
  *  - routines (feeding, walks, medication, grooming…), then schedules the next occurrence,
  *  - vaccinations due today,
  *  - upcoming health records such as vet visits.
- * Also restores every alarm after the phone restarts (alarms don't survive a reboot).
+ * System events that wipe or invalidate alarms (reboot, app update, clock/time-zone change, exact-alarm
+ * permission granted) are handed to WorkManager ([RescheduleRemindersWorker]) instead of being done here.
  */
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-            rescheduleAll(context)
+        if (intent.action in RESCHEDULE_ACTIONS) {
+            // Only enqueue: WorkManager persists the job, retries it if it fails, and isn't bound by
+            // the ~10 s limit of a receiver. Re-creating alarms a few seconds later is fine.
+            ReminderWork.requestReschedule(context, intent.action.orEmpty().substringAfterLast('.'))
             return
         }
 
+        // A reminder alarm fired: show it now (it must not be deferred).
+        // Database reads can't run on the receiver's main thread: keep the broadcast alive with
+        // goAsync() and do the work on a background thread, then call finish().
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                handle(context.applicationContext, intent)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
+    @WorkerThread
+    private fun handle(context: Context, intent: Intent) {
         val notificationsOn = SessionManager(context).areNotificationsEnabled()
         // Older task alarms carried only TASK_ID, so treat those as task reminders too.
         val type = intent.getStringExtra(EXTRA_TYPE)
@@ -46,7 +69,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
     private fun onTaskReminder(context: Context, taskId: Long, notificationsOn: Boolean) {
         if (taskId == -1L) return
-        val task = AuthDatabaseHelper(context).getCareTasks().find { it.id == taskId } ?: return
+        val task = TaskRepository(context).getCareTasks().find { it.id == taskId } ?: return
 
         if (notificationsOn && task.reminderEnabled && !task.isCompleted && TaskSchedule.isDueToday(task)) {
             val title = when {
@@ -64,25 +87,16 @@ class ReminderReceiver : BroadcastReceiver() {
         TaskReminder.schedule(context, task)
     }
 
-    /** After a reboot or app update, set every reminder again. */
-    private fun rescheduleAll(context: Context) {
-        val database = AuthDatabaseHelper(context)
-        database.getCareTasks().forEach { TaskReminder.schedule(context, it) }
-
-        database.getPetOptions().forEach { pet ->
-            val values = database.getPetById(pet.id) ?: return@forEach
-            val date = values.getAsString("vaccine_date").orEmpty()
-            if (date.isNotBlank() && values.getAsInteger("reminder_enabled") == 1) {
-                VaccineReminder.schedule(context, pet.id, pet.name, date)
-            }
-        }
-
-        database.getAllHealthcareHistory().forEach { record ->
-            RecordReminder.schedule(context, record.id, record.petName, record.type, record.date)
-        }
-    }
-
     companion object {
+        /** System broadcasts after which every alarm must be re-created (also listed in the manifest). */
+        private val RESCHEDULE_ACTIONS = setOf(
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED, // "android.intent.action.TIME_SET"
+            Intent.ACTION_TIMEZONE_CHANGED,
+            "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" // Android 12+
+        )
+
         const val EXTRA_TYPE = "TYPE"
         const val EXTRA_TASK_ID = "TASK_ID"
         const val EXTRA_PET_ID = "PET_ID"

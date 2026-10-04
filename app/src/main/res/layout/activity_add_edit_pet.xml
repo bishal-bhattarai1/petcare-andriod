@@ -587,26 +587,30 @@
                             android:textColor="@color/app_text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.PetCare.TextInput"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/add_pet_label_notes"
+                        android:textColor="@color/app_text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/inputNotes"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="@string/add_pet_label_notes"
-                        app:counterEnabled="true"
-                        app:counterMaxLength="500"
-                        app:placeholderText="Behaviour, routines, anything a sitter should know">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputNotes"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="top"
-                            android:inputType="textMultiLine|textCapSentences"
-                            android:maxLength="500"
-                            android:minLines="3"
-                            android:textColor="@color/app_text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_login_input_white"
+                        android:gravity="top"
+                        android:hint="Behaviour, routines, anything a sitter should know..."
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:maxLength="500"
+                        android:minLines="3"
+                        android:padding="12dp"
+                        android:textColor="@color/app_text_primary"
+                        android:textColorHint="@color/app_text_secondary"
+                        android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

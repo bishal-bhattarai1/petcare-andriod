@@ -36,7 +36,8 @@
             android:launchMode="singleTop" />
         <activity
             android:name=".AddEditPetActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".AddTaskActivity"
             android:exported="false" />
@@ -137,6 +138,11 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <!-- Alarm times are wall-clock based: re-create them when the clock or time zone changes -->
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <!-- Android 12+: user granted "Alarms & reminders", so reminders can become exact again -->
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
     </application>

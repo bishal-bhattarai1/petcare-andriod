@@ -1,5 +1,6 @@
 package com.example.petcare
 
+import com.example.petcare.data.AuthRepository
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -15,9 +16,13 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PersonalInfoActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var auth: AuthRepository
     private lateinit var sessionManager: SessionManager
     
     private lateinit var imageAvatar: ImageView
@@ -40,7 +45,7 @@ class PersonalInfoActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_personal_info)
         
-        database = AuthDatabaseHelper(this)
+        auth = AuthRepository(this)
         sessionManager = SessionManager(this)
 
         updateStatusBarIcons()
@@ -98,7 +103,14 @@ class PersonalInfoActivity : AppCompatActivity() {
             return
         }
 
-        val nameUpdated = database.updateUserName(email, newName)
+        lifecycleScope.launch {
+            // Database write off the main thread.
+            val nameUpdated = withContext(Dispatchers.IO) { auth.updateUserName(email, newName) }
+            onNameSaved(nameUpdated, newName, newPhone, email)
+        }
+    }
+
+    private fun onNameSaved(nameUpdated: Boolean, newName: String, newPhone: String, email: String) {
         if (nameUpdated) {
             sessionManager.updateUserInfo(newName, email)
             sessionManager.setDefaultDelegateContact(newPhone)

@@ -1,5 +1,6 @@
 package com.example.petcare
 
+import com.example.petcare.data.AuthRepository
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
@@ -11,17 +12,20 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ForgotPasswordActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var auth: AuthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_forgot_password)
-        database = AuthDatabaseHelper(this)
+        auth = AuthRepository(this)
 
         updateStatusBarIcons()
 
@@ -52,20 +56,36 @@ class ForgotPasswordActivity : AppCompatActivity() {
                 email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
                     showMessage("Fill in all fields.")
                 }
-                password.length < 6 -> {
-                    showMessage("Password must be at least 6 characters.")
+                password.length < PasswordHasher.MIN_PASSWORD_LENGTH -> {
+                    showMessage("Password must be at least ${PasswordHasher.MIN_PASSWORD_LENGTH} characters.")
                 }
                 password != confirmPassword -> {
                     showMessage("Passwords do not match.")
                 }
-                !database.emailExists(email) -> {
-                    showMessage(getString(R.string.recovery_email_not_found))
+                else -> resetPassword(email, password, saveButton)
+            }
+        }
+    }
+
+    /** Looks up the account and stores the new PBKDF2 hash on a background thread. */
+    private fun resetPassword(email: String, password: String, saveButton: View) {
+        saveButton.isEnabled = false // prevent a second tap while hashing
+        lifecycleScope.launch {
+            try {
+                // null = unknown email, true/false = whether the update succeeded.
+                val updated = withContext(Dispatchers.IO) {
+                    if (!auth.emailExists(email)) null else auth.updatePassword(email, password)
                 }
-                database.updatePassword(email, password) -> {
-                    showMessage(getString(R.string.recovery_success))
-                    finish()
+                when (updated) {
+                    null -> showMessage(getString(R.string.recovery_email_not_found))
+                    true -> {
+                        showMessage(getString(R.string.recovery_success))
+                        finish()
+                    }
+                    false -> showMessage("Failed to update password. Try again.")
                 }
-                else -> showMessage("Failed to update password. Try again.")
+            } finally {
+                saveButton.isEnabled = true
             }
         }
     }

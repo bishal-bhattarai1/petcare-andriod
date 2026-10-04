@@ -1,5 +1,9 @@
 package com.example.petcare
 
+import com.example.petcare.data.ExpenseRepository
+import com.example.petcare.data.HealthRepository
+import com.example.petcare.data.PetRepository
+import com.example.petcare.data.TaskRepository
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -59,7 +63,10 @@ class PetHistoryActivity : AppCompatActivity() {
         val trailingColor: Int = R.color.app_text_primary
     )
 
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
+    private lateinit var tasks: TaskRepository
+    private lateinit var expenses: ExpenseRepository
+    private lateinit var health: HealthRepository
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var selectedPetId: Long = -1L
 
@@ -67,7 +74,10 @@ class PetHistoryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_pet_history)
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
+        tasks = TaskRepository(this)
+        expenses = ExpenseRepository(this)
+        health = HealthRepository(this)
 
         val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -96,7 +106,7 @@ class PetHistoryActivity : AppCompatActivity() {
     // region Loading
 
     private fun loadPets() {
-        runInBackground({ database.getPetOptions() }) { pets ->
+        runInBackground({ pets.getPetOptions() }) { pets ->
             if (pets.isEmpty()) {
                 findViewById<View>(R.id.textHistoryEmpty).visibility = View.VISIBLE
                 return@runInBackground
@@ -138,23 +148,23 @@ class PetHistoryActivity : AppCompatActivity() {
     }
 
     private fun readHistory(petId: Long): History? {
-        val pet = database.getPetById(petId) ?: return null
+        val pet = pets.getPet(petId) ?: return null
         return History(
-            name = pet.getAsString("name").orEmpty(),
-            species = pet.getAsString("species").orEmpty(),
-            breed = pet.getAsString("breed").orEmpty(),
-            age = pet.getAsInteger("age") ?: 0,
-            weight = pet.getAsDouble("weight") ?: 0.0,
-            diet = pet.getAsString("diet").orEmpty(),
-            allergies = pet.getAsString("allergies").orEmpty(),
-            vaccineDate = pet.getAsString("vaccine_date").orEmpty(),
-            createdAt = pet.getAsLong("created_at") ?: 0L,
-            photo = database.getPetPhotos(petId).firstOrNull(),
-            activeRoutines = database.getCareTasks(petId).size,
-            completions = database.getCompletionHistory(petId),
-            expenses = database.getExpenses(petId)
+            name = pet.name,
+            species = pet.species.orEmpty(),
+            breed = pet.breed.orEmpty(),
+            age = pet.age ?: 0,
+            weight = pet.weight ?: 0.0,
+            diet = pet.diet.orEmpty(),
+            allergies = pet.allergies.orEmpty(),
+            vaccineDate = pet.vaccineDate.orEmpty(),
+            createdAt = pet.createdAt ?: 0L,
+            photo = pets.getPetPhotos(petId).firstOrNull(),
+            activeRoutines = tasks.getCareTasks(petId).size,
+            completions = tasks.getCompletionHistory(petId),
+            expenses = expenses.getExpenses(petId)
                 .sortedByDescending { parseExpenseDate(it.date)?.time ?: Long.MIN_VALUE },
-            records = database.getHealthcareHistory(petId)
+            records = health.getHealthcareHistory(petId)
         )
     }
 
@@ -261,7 +271,7 @@ class PetHistoryActivity : AppCompatActivity() {
             )
         }
         val since = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -29) }
-        val last30 = h.completions.count { it.date >= AuthDatabaseHelper.dateKey(since) }
+        val last30 = h.completions.count { it.date >= DateKeys.dateKey(since) }
         return section(
             title = "Care activity",
             summary = "$last30 routines done in the last 30 days · ${byDay.size} active days in total",

@@ -12,14 +12,7 @@ object VaccineReminder {
 
     /** Schedules (or replaces) the reminder for [date] ("dd/MM/yyyy"). Past dates are ignored. */
     fun schedule(context: Context, petId: Long, petName: String, date: String) {
-        val parsed = parseExpenseDate(date) ?: return
-        val calendar = Calendar.getInstance().apply {
-            time = parsed
-            set(Calendar.HOUR_OF_DAY, 9)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-        }
-        if (calendar.before(Calendar.getInstance())) return
+        val calendar = dueAt(date) ?: return
 
         val pending = pendingIntent(context, petId, petName) ?: return
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
@@ -33,6 +26,21 @@ object VaccineReminder {
             alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pending)
         }
     }
+
+    /** 9:00 AM on [date] if that is still in the future, else null (no reminder is needed). */
+    fun dueAt(date: String): Calendar? {
+        val parsed = parseExpenseDate(date) ?: return null
+        val calendar = Calendar.getInstance().apply {
+            time = parsed
+            set(Calendar.HOUR_OF_DAY, 9)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }
+        return calendar.takeIf { !it.before(Calendar.getInstance()) }
+    }
+
+    /** True if this pet's reminder alarm intent still exists (it is cleared by reboot and force-stop). */
+    fun isScheduled(context: Context, petId: Long): Boolean = pendingIntent(context, petId, null) != null
 
     fun cancel(context: Context, petId: Long) {
         val pending = pendingIntent(context, petId, null) ?: return

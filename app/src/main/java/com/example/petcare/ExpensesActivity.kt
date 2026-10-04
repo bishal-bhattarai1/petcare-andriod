@@ -1,5 +1,7 @@
 package com.example.petcare
 
+import androidx.activity.viewModels
+import com.example.petcare.ui.ExpensesViewModel
 import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.os.Bundle
@@ -17,6 +19,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlin.math.roundToInt
 
 class ExpensesActivity : AppCompatActivity() {
+    /** Holds this screen's data across rotation; loads it off the main thread. */
+    private val viewModel: ExpensesViewModel by viewModels()
     private lateinit var expensesPage: ExpensesPageController
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +41,7 @@ class ExpensesActivity : AppCompatActivity() {
         expensesPage = ExpensesPageController(
             activity = this,
             page = findViewById(R.id.main_expenses),
-            database = AuthDatabaseHelper(this),
+            viewModel = viewModel,
             snackbarAnchor = { fab }
         ).also { it.setup() }
 

@@ -74,6 +74,8 @@
     <string name="settings_hint_phone">Phone number</string>
     <string name="settings_button_save">Save Changes</string>
     <string name="settings_button_update_pass">Update Password</string>
+    <string name="settings_label_current_pass">Current Password</string>
+    <string name="settings_hint_current_pass">Enter current password</string>
     <string name="settings_label_new_pass">New Password</string>
     <string name="settings_label_confirm_pass">Confirm New Password</string>
     <string name="settings_hint_new_pass">Enter new password</string>

@@ -1,5 +1,12 @@
 package com.example.petcare
 
+import androidx.lifecycle.lifecycleScope
+import com.example.petcare.data.PetRepository
+import com.example.petcare.data.PlaceRepository
+import com.example.petcare.data.TaskRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
@@ -16,13 +23,17 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
 class AddTaskActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
+    private lateinit var tasks: TaskRepository
+    private lateinit var places: PlaceRepository
     private lateinit var weeklyDaysLayout: LinearLayout
-    private val selectedWeekDays = linkedSetOf("Mon")
+    // Weekly routines start on today's weekday; picking every day would just be a daily routine.
+    private val selectedWeekDays = linkedSetOf(SimpleDateFormat("EEE", Locale.US).format(Calendar.getInstance().time))
     private var selectedPet: PetOption? = null
     private var selectedLocationId: Long = -1L
     private var initialPetId: Long = -1L
@@ -31,7 +42,9 @@ class AddTaskActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_add_task)
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
+        tasks = TaskRepository(this)
+        places = PlaceRepository(this)
         initialPetId = intent.getLongExtra(EXTRA_SELECTED_PET_ID, -1L)
 
         updateStatusBarIcons()
@@ -51,8 +64,8 @@ class AddTaskActivity : AppCompatActivity() {
         val categoryGroup = findViewById<ChipGroup>(R.id.chipGroupCategory)
         val repeatGroup = findViewById<ChipGroup>(R.id.chipGroupRepeat)
         
-        setupPetPicker()
-        setupLocationPicker()
+        // Pet list loads in the background; saved places load in onResume (they may change meanwhile).
+        lifecycleScope.launch { setupPetPicker(withContext(Dispatchers.IO) { pets.getPetOptions() }) }
         setupScheduleControls()
 
         saveButton.setOnClickListener {
@@ -80,7 +93,7 @@ class AddTaskActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val weekDays = when (repeatType) {
-                "Weekly" -> selectedWeekDays.joinToString(",")
+                "Weekly" -> WEEK_ORDER.filter { it in selectedWeekDays }.joinToString(",")
                 "Monthly" -> monthDay.toString() // Day of the month, e.g. "15".
                 else -> ""
             }
@@ -89,36 +102,47 @@ class AddTaskActivity : AppCompatActivity() {
             val supplies = findViewById<TextInputEditText>(R.id.inputSupplies).text?.toString().orEmpty()
             val notes = findViewById<TextInputEditText>(R.id.inputTaskNotes).text?.toString().orEmpty()
             
-            val taskId = database.saveTask(
-                petId = pet.id,
-                description = desc,
-                expenseAmount = expense,
-                category = selectedChipText(categoryGroup, "Feeding"),
-                repeatType = repeatType,
-                weekDays = weekDays,
-                scheduledTime = scheduledTime,
-                endsOn = findViewById<TextInputEditText>(R.id.inputEndsOn).text?.toString().orEmpty(),
-                delegate = findViewById<android.widget.CheckBox>(R.id.checkDelegate).isChecked,
-                reminder = reminderEnabled,
-                supplies = supplies,
-                notes = notes,
-                locationId = selectedLocationId
-            )
-
-            if (taskId != -1L) {
-                if (reminderEnabled && scheduledTime.isNotBlank()) {
-                    database.getCareTasks(pet.id).find { it.id == taskId }?.let { TaskReminder.schedule(this, it) }
+            val category = selectedChipText(categoryGroup, "Feeding")
+            val endsOn = findViewById<TextInputEditText>(R.id.inputEndsOn).text?.toString().orEmpty()
+            val delegate = findViewById<android.widget.CheckBox>(R.id.checkDelegate).isChecked
+            val locationId = selectedLocationId
+            saveButton.isEnabled = false // no duplicate routine from a double tap
+            lifecycleScope.launch {
+                // Save, then read the stored routine back for the reminder, all off the main thread.
+                val savedTask = withContext(Dispatchers.IO) {
+                    val taskId = tasks.saveTask(
+                        petId = pet.id,
+                        description = desc,
+                        expenseAmount = expense,
+                        category = category,
+                        repeatType = repeatType,
+                        weekDays = weekDays,
+                        scheduledTime = scheduledTime,
+                        endsOn = endsOn,
+                        delegate = delegate,
+                        reminder = reminderEnabled,
+                        supplies = supplies,
+                        notes = notes,
+                        locationId = locationId
+                    )
+                    if (taskId == -1L) null else Pair(taskId, tasks.getCareTasks(pet.id).find { it.id == taskId })
                 }
-                Toast.makeText(this, "Care routine saved!", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Could not save care routine", Toast.LENGTH_SHORT).show()
+
+                if (savedTask != null) {
+                    if (reminderEnabled && scheduledTime.isNotBlank()) {
+                        savedTask.second?.let { TaskReminder.schedule(this@AddTaskActivity, it) }
+                    }
+                    Toast.makeText(this@AddTaskActivity, "Care routine saved!", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    saveButton.isEnabled = true
+                    Toast.makeText(this@AddTaskActivity, "Could not save care routine", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
-    private fun setupPetPicker() {
-        val pets = database.getPetOptions()
+    private fun setupPetPicker(pets: List<PetOption>) {
         val subtitle = findViewById<TextView>(R.id.textPetSubtitle)
         val input = findViewById<AutoCompleteTextView>(R.id.inputPetName)
 
@@ -146,11 +170,10 @@ class AddTaskActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        setupLocationPicker()
+        lifecycleScope.launch { setupLocationPicker(withContext(Dispatchers.IO) { places.getLocations() }) }
     }
 
-    private fun setupLocationPicker() {
-        val locations = database.getLocations()
+    private fun setupLocationPicker(locations: List<PetLocation>) {
         val input = findViewById<AutoCompleteTextView>(R.id.inputLinkLocation)
         
         if (locations.isEmpty()) {
@@ -284,5 +307,6 @@ class AddTaskActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_SELECTED_PET_ID = "extra_selected_pet_id"
+        private val WEEK_ORDER = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     }
 }

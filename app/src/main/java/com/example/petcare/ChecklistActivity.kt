@@ -1,5 +1,8 @@
 package com.example.petcare
 
+import com.example.petcare.data.HealthRepository
+import com.example.petcare.data.PetRepository
+import com.example.petcare.data.TaskRepository
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -33,13 +36,16 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
 class ChecklistActivity : AppCompatActivity() {
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var petRepo: PetRepository
+    private lateinit var taskRepo: TaskRepository
+    private lateinit var healthRepo: HealthRepository
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -70,7 +76,9 @@ class ChecklistActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_checklist)
-        database = AuthDatabaseHelper(this)
+        petRepo = PetRepository(this)
+        taskRepo = TaskRepository(this)
+        healthRepo = HealthRepository(this)
         petId = intent.getLongExtra(EXTRA_PET_ID, -1L)
         selectedPetId = if (savedInstanceState?.containsKey(STATE_PET_ID) == true) {
             savedInstanceState.getLong(STATE_PET_ID).takeIf { it > 0 }
@@ -101,7 +109,7 @@ class ChecklistActivity : AppCompatActivity() {
 
         adapter = ChecklistAdapter(
             onToggleComplete = ::completeTask,
-            onWeeklyDayToggled = ::toggleWeeklyDay,
+            onWeekDayTapped = ::onWeekDayTapped,
             onEdit = ::showEditDialog,
             onDelete = ::showDeleteTaskConfirmation,
             onSyncCalendar = ::exportToSystemCalendar
@@ -161,13 +169,13 @@ class ChecklistActivity : AppCompatActivity() {
     /** Loads pets and all of today's tasks in the background, then renders. */
     private fun loadData() {
         runInBackground({
-            val loadedPets = database.getPetOptions()
-            val loadedTasks = database.getCareTasks(null).filter { TaskSchedule.isDueToday(it) }
+            val loadedPets = petRepo.getPetOptions()
+            val loadedTasks = taskRepo.getCareTasks(null)
             val today = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }.timeInMillis
             val horizon = today + UPCOMING_DAYS * 24L * 60 * 60 * 1000
-            val upcoming = database.getAllHealthcareHistory()
+            val upcoming = healthRepo.getAllHealthcareHistory()
                 .mapNotNull { r -> parseExpenseDate(r.date)?.time?.takeIf { it in today..horizon }?.let { r to it } }
                 .sortedBy { it.second }
                 .map { it.first }
@@ -310,37 +318,29 @@ class ChecklistActivity : AppCompatActivity() {
             return
         }
         source.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        updateLocalTask(task.id) { it.copy(isCompleted = true) }
+        // Today also counts towards a weekly routine's "this week" progress.
+        val today = SimpleDateFormat("EEE", Locale.US).format(Date())
+        val weekDone = (task.completedWeekDays.split(",").filter { it.isNotBlank() } + today).distinct().joinToString(",")
+        updateLocalTask(task.id) { it.copy(isCompleted = true, completedWeekDays = weekDone) }
 
-        runInBackground({ database.updateTaskCompletion(task.id, true) }) { saved ->
+        runInBackground({ taskRepo.updateTaskCompletion(task.id, true) }) { saved ->
             if (saved) {
                 showMessage("\"${task.description.ifBlank { "Routine" }}\" done")
             } else {
-                updateLocalTask(task.id) { it.copy(isCompleted = false) }
+                updateLocalTask(task.id) { it.copy(isCompleted = false, completedWeekDays = task.completedWeekDays) }
                 showMessage("Couldn't update routine. Please try again.")
             }
         }
     }
 
-    private fun toggleWeeklyDay(task: CareTask, day: String, checked: Boolean) {
-        val current = allTasks.firstOrNull { it.id == task.id } ?: return
-        val blocked = if (!checked) "${ChecklistAdapter.fullDayName(day)} is already done. It can't be undone."
-        else CompletionRules.weekDayBlockReason(day, current)
-        if (blocked != null) {
-            showMessage(blocked)
-            applyFilters() // The chip toggled itself on tap; re-render to restore it.
-            return
-        }
-        val days = current.completedWeekDays.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toMutableSet()
-        days.add(day)
-        val serialized = days.joinToString(",")
-        updateLocalTask(task.id) { it.copy(completedWeekDays = serialized) }
-
-        runInBackground({ database.updateWeeklyDayCompletion(task.id, serialized) }) { saved ->
-            if (!saved) {
-                updateLocalTask(task.id) { it.copy(completedWeekDays = current.completedWeekDays) }
-                showMessage("Couldn't update ${ChecklistAdapter.fullDayName(day)}.")
-            }
+    /** Weekly day chips: today completes the routine; other days only explain their state. */
+    private fun onWeekDayTapped(task: CareTask, day: String, source: View) {
+        val dayName = ChecklistAdapter.fullDayName(day)
+        when (CompletionRules.weekDayStatus(day, task)) {
+            CompletionRules.WeekDayStatus.TODAY -> completeTask(task, source)
+            CompletionRules.WeekDayStatus.DONE -> showMessage("Done on $dayName")
+            CompletionRules.WeekDayStatus.MISSED -> showMessage("$dayName was missed. Past days can't be ticked later.")
+            CompletionRules.WeekDayStatus.UPCOMING -> showMessage("You can tick $dayName when it arrives.")
         }
     }
 
@@ -350,7 +350,7 @@ class ChecklistActivity : AppCompatActivity() {
             .setMessage("\"${task.description.ifBlank { "This routine" }}\" and its history will be removed. This can't be undone.")
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
-                runInBackground({ database.deleteTask(task.id) }) { deleted ->
+                runInBackground({ taskRepo.deleteTask(task.id) }) { deleted ->
                     if (deleted) {
                         TaskReminder.cancel(this, task.id)
                         allTasks = allTasks.filterNot { it.id == task.id }
@@ -398,7 +398,7 @@ class ChecklistActivity : AppCompatActivity() {
             val notes = notesInput.text?.toString()?.trim().orEmpty()
             dialog.dismiss()
 
-            runInBackground({ database.updateTaskDetails(task.id, description, time, supplies, notes) }) { saved ->
+            runInBackground({ taskRepo.updateTaskDetails(task.id, description, time, supplies, notes) }) { saved ->
                 if (saved) {
                     updateLocalTask(task.id) {
                         it.copy(description = description, scheduledTime = time, requiredSupplies = supplies, taskNotes = notes)

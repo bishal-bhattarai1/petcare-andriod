@@ -1,5 +1,9 @@
 package com.example.petcare
 
+import com.example.petcare.data.ExpenseRepository
+import com.example.petcare.data.HealthRepository
+import com.example.petcare.data.PetRepository
+import com.example.petcare.data.TaskRepository
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.content.Intent
@@ -58,7 +62,10 @@ class PetDetailsActivity : AppCompatActivity() {
         val totalSpent: Double
     )
 
-    private lateinit var database: AuthDatabaseHelper
+    private lateinit var pets: PetRepository
+    private lateinit var tasks: TaskRepository
+    private lateinit var expenses: ExpenseRepository
+    private lateinit var health: HealthRepository
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var petId: Long = -1L
     private var petName: String = ""
@@ -69,7 +76,10 @@ class PetDetailsActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_pet_details)
 
-        database = AuthDatabaseHelper(this)
+        pets = PetRepository(this)
+        tasks = TaskRepository(this)
+        expenses = ExpenseRepository(this)
+        health = HealthRepository(this)
         petId = intent.getLongExtra("EXTRA_PET_ID", -1L)
         if (petId == -1L) {
             finish()
@@ -138,24 +148,24 @@ class PetDetailsActivity : AppCompatActivity() {
     }
 
     private fun readProfile(): PetProfile? {
-        val values = database.getPetById(petId) ?: return null
-        val tasks = database.getCareTasks(petId)
+        val pet = pets.getPet(petId) ?: return null
+        val petTasks = tasks.getCareTasks(petId)
         return PetProfile(
-            name = values.getAsString("name").orEmpty(),
-            species = values.getAsString("species").orEmpty(),
-            breed = values.getAsString("breed").orEmpty(),
-            age = values.getAsInteger("age") ?: 0,
-            weight = values.getAsDouble("weight") ?: 0.0,
-            diet = values.getAsString("diet").orEmpty(),
-            vaccineDate = values.getAsString("vaccine_date").orEmpty(),
-            allergies = values.getAsString("allergies").orEmpty(),
-            toys = values.getAsString("toys").orEmpty(),
-            notes = values.getAsString("notes").orEmpty(),
-            photos = database.getPetPhotos(petId),
-            records = sortRecords(database.getHealthcareHistory(petId)),
-            tasksDone = tasks.count { it.isCompleted },
-            tasksTotal = tasks.size,
-            totalSpent = database.getExpenses(petId).sumOf { it.amount }
+            name = pet.name,
+            species = pet.species.orEmpty(),
+            breed = pet.breed.orEmpty(),
+            age = pet.age ?: 0,
+            weight = pet.weight ?: 0.0,
+            diet = pet.diet.orEmpty(),
+            vaccineDate = pet.vaccineDate.orEmpty(),
+            allergies = pet.allergies.orEmpty(),
+            toys = pet.toys.orEmpty(),
+            notes = pet.notes.orEmpty(),
+            photos = pets.getPetPhotos(petId),
+            records = sortRecords(health.getHealthcareHistory(petId)),
+            tasksDone = petTasks.count { it.isCompleted },
+            tasksTotal = petTasks.size,
+            totalSpent = expenses.getExpenses(petId).sumOf { it.amount }
         )
     }
 
@@ -370,7 +380,7 @@ class PetDetailsActivity : AppCompatActivity() {
             .setMessage("This removes the pet along with its routines, expenses, photos and health records. This can't be undone.")
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
-                runInBackground({ database.deletePet(petId) }) { deleted ->
+                runInBackground({ pets.deletePet(petId) }) { deleted ->
                     if (deleted) {
                         VaccineReminder.cancel(this, petId)
                         Toast.makeText(this, "${petName.ifBlank { "Pet" }} deleted", Toast.LENGTH_SHORT).show()
@@ -390,7 +400,7 @@ class PetDetailsActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
                 runInBackground({
-                    database.deleteHealthcareRecord(record.id).also { if (it) RecordReminder.cancel(this, record.id) }
+                    health.deleteHealthcareRecord(record.id).also { if (it) RecordReminder.cancel(this, record.id) }
                 }) { deleted ->
                     showMessage(if (deleted) "Record deleted" else "Couldn't delete record.")
                     if (deleted) loadProfile()
@@ -445,10 +455,10 @@ class PetDetailsActivity : AppCompatActivity() {
     /** Saves the date (empty = none) and keeps the 9:00 AM reminder in sync. */
     private fun saveVaccineDate(date: String) {
         runInBackground({
-            val saved = database.updatePetVaccineDate(petId, date)
+            val saved = pets.updatePetVaccineDate(petId, date)
             if (saved) {
                 VaccineReminder.cancel(this, petId)
-                val remind = database.getPetById(petId)?.getAsInteger("reminder_enabled") == 1
+                val remind = pets.getPet(petId)?.reminderEnabled == 1
                 if (date.isNotBlank() && remind) VaccineReminder.schedule(this, petId, petName, date)
             }
             saved
@@ -535,12 +545,12 @@ class PetDetailsActivity : AppCompatActivity() {
                 ?.let { SimpleDateFormat("dd/MM/yyyy", Locale.US).format(it.time) }
             dialog.dismiss()
             runInBackground({
-                val recordId = database.addHealthcareRecord(petId, type, date, notes)
+                val recordId = health.addHealthcareRecord(petId, type, date, notes)
                 val saved = recordId != -1L
                 // A future appointment gets a reminder; a future vaccination becomes "Next vaccination".
-                if (saved) HealthSchedule.onRecordAdded(this, database, petId, recordId, type, date)
-                if (saved && nextDueDate != null && database.updatePetVaccineDate(petId, nextDueDate)) {
-                    val remind = database.getPetById(petId)?.getAsInteger("reminder_enabled") == 1
+                if (saved) HealthSchedule.onRecordAdded(this, petId, recordId, type, date)
+                if (saved && nextDueDate != null && pets.updatePetVaccineDate(petId, nextDueDate)) {
+                    val remind = pets.getPet(petId)?.reminderEnabled == 1
                     if (remind) VaccineReminder.schedule(this, petId, petName, nextDueDate)
                 }
                 saved
